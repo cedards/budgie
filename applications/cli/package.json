@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "name": "@budgie/cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc"
+  },
+  "author": "cedarwards",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "typescript": "^4.2.4"
+  }
+}
