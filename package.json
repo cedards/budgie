@@ -1,0 +1,11 @@
+{
+  "name": "budgie",
+  "version": "1.0.0",
+  "description": "Personal budgeting tool",
+  "main": "applications/cli/dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "cedarwards",
+  "license": "UNLICENSED"
+}

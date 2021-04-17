@@ -1,0 +1,26 @@
+Arguments: 
+  /home/cedar/.nvm/versions/node/v14.16.1/bin/node /home/cedar/.nvm/versions/node/v14.16.1/bin/yarn
+
+PATH: 
+  /home/cedar/.nvm/versions/node/v14.16.1/bin:/home/cedar/bin:/home/cedar/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/gradle/gradle-4.10.2/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  14.16.1
+
+Platform: 
+  linux x64
+
+Trace: 
+  Error: EACCES: permission denied, mkdir '/home/david'
+
+npm manifest: 
+  No manifest
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
