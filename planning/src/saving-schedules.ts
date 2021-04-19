@@ -13,17 +13,24 @@ const shiftYears = (years: number) => (date: string) => {
   return new Date(year + years, month - 1, day).toISOString().substr(0, 10)
 }
 
-function sortBy<T, R>(mapper: (originalValue: T) => R) {
+function sortBy<T>(...mappers: Array<(originalValue: T) => any>) {
   return function(list: Array<T>): Array<T> {
-    const comparator = (a: T, b: T) => {
-      const aValue = mapper(a)
-      const bValue = mapper(b)
+    const comparator: (a: T, b: T) => number = mappers
+      .concat([])
+      .reverse()
+      .reduce((composedComparator: null | ((a: T, b: T) => number), mapper) => {
+        return (a: T, b: T) => {
+          const aValue = mapper(a)
+          const bValue = mapper(b)
 
-      if(aValue === bValue) return 0
-      return aValue < bValue
-        ? -1
-        : 1
-    }
+          if(aValue === bValue) {
+            if(composedComparator === null) return 0
+            return composedComparator(a, b)
+          }
+
+          return aValue < bValue ? -1 : 1
+        }
+      }, null)
 
     const newList = list.concat([])
     newList.sort(comparator)
@@ -81,3 +88,32 @@ const savingScheduleGenerator = (
 export const weeklySavingSchedule = savingScheduleGenerator(1, shiftDays(7))
 export const monthlySavingSchedule = savingScheduleGenerator(4, shiftMonths(1))
 export const yearlySavingSchedule = savingScheduleGenerator(52, shiftYears(1))
+
+export function* combinedSavingSchedule(
+  prioritizedSchedules: Array<[Generator<{target: string, amount: number, date: string}>, number]>
+) {
+  const sortByDateThenPriority = sortBy<[IteratorResult<{target: string, amount: number, date: string}>, number, number]>(
+    tuple => tuple[0].value.date,
+    tuple => tuple[1]
+  );
+
+  const nextBatchOfTargets =
+    prioritizedSchedules
+      .map(function(
+        [schedule, priority],
+        index
+      ): [IteratorResult<{target: string, amount: number, date: string}>, number, number] {
+        return [schedule.next(), priority, index]
+      })
+
+  const prioritize = (tuples) => sortByDateThenPriority(
+    tuples.filter(([yieldResult]) => !yieldResult.done)
+  )
+
+  while(prioritize(nextBatchOfTargets).length > 0) {
+    const next = prioritize(nextBatchOfTargets)[0]
+    const [yieldResult, _, scheduleIndex] = next
+    nextBatchOfTargets[scheduleIndex][0] = prioritizedSchedules[scheduleIndex][0].next()
+    yield yieldResult.value
+  }
+}

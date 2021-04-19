@@ -1,4 +1,9 @@
-import {monthlySavingSchedule, weeklySavingSchedule, yearlySavingSchedule} from "./saving-schedules";
+import {
+  combinedSavingSchedule,
+  monthlySavingSchedule,
+  weeklySavingSchedule,
+  yearlySavingSchedule
+} from "./saving-schedules";
 
 describe("saving schedules", () => {
   describe("weekly saving schedule", () => {
@@ -198,6 +203,55 @@ describe("saving schedules", () => {
           .map(t => t.amount)
           .reduce((a,b) => a+b, 0)
       ).toEqual(654321)
+    })
+  })
+
+  describe("combined saving schedule", () => {
+    it("merges all the supplied schedules, ordering targets on the same day by priority", () => {
+      // all these schedules have their first trigger on 2021-02-08.
+      const highPriority = monthlySavingSchedule("high priority monthly", [["2021-03-01", 1000]])
+      const midPriority = yearlySavingSchedule("mid priority yearly", [["2022-01-31", 52000]])
+      const lowPriority = weeklySavingSchedule("low priority weekly", [["2021-02-08", 300]])
+
+      const combined = combinedSavingSchedule([
+        [lowPriority, 3],
+        [highPriority, 1],
+        [midPriority, 2],
+      ])
+
+      expect([
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+        combined.next().value,
+      ]).toEqual([
+        { target: "high priority monthly", date: "2021-02-08", amount: 250 },
+        { target: "mid priority yearly", date: "2021-02-08", amount: 1000 },
+        { target: "low priority weekly", date: "2021-02-08", amount: 300 },
+        { target: "high priority monthly", date: "2021-02-15", amount: 250 },
+        { target: "mid priority yearly", date: "2021-02-15", amount: 1000 },
+        { target: "low priority weekly", date: "2021-02-15", amount: 300 },
+        { target: "high priority monthly", date: "2021-02-22", amount: 250 },
+        { target: "mid priority yearly", date: "2021-02-22", amount: 1000 },
+        { target: "low priority weekly", date: "2021-02-22", amount: 300 },
+        { target: "high priority monthly", date: "2021-03-01", amount: 250 },
+        { target: "mid priority yearly", date: "2021-03-01", amount: 1000 },
+        { target: "low priority weekly", date: "2021-03-01", amount: 300 },
+        { target: "mid priority yearly", date: "2021-03-08", amount: 1000 },
+        { target: "low priority weekly", date: "2021-03-08", amount: 300 },
+        { target: "high priority monthly", date: "2021-03-11", amount: 250 },
+      ])
     })
   })
 })
