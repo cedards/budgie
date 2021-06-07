@@ -45,10 +45,10 @@ const savingScheduleGenerator = (
   targetName: string,
   schedule: Array<[string, number]>,
 ) {
-  const chronologicalSchedule = sortBy((scheduleItem => scheduleItem[0]))(schedule);
+  const chronologicalSchedule: Array<[string, number]> = sortBy<[string, number]>((scheduleItem => scheduleItem[0]))(schedule);
   const reverseChronologicalSchedule = chronologicalSchedule.concat([]).reverse()
   const scheduledAmountFor = (date: string) =>
-    reverseChronologicalSchedule.find(([entryDate]) => entryDate <= date)[1]
+    reverseChronologicalSchedule.find(([entryDate, _]) => entryDate <= date)[1]
 
   let date = chronologicalSchedule[0][0]
 

@@ -1,3 +1,10 @@
+import {
+  combinedSavingSchedule,
+  monthlySavingSchedule,
+  weeklySavingSchedule,
+  yearlySavingSchedule
+} from "./saving-schedules";
+
 interface StreamEvent {
   type: string
   version: number
@@ -31,11 +38,15 @@ class TransactEvent implements StreamEvent {
   version = 1
 
   accountName: string
+  date: string
   value: number
+  target: string | null
 
-  constructor(accountName: string, value: number) {
+  constructor(accountName: string, date: string, value: number, target?: string) {
     this.accountName = accountName
+    this.date = date
     this.value = value
+    this.target = target || null
   }
 }
 
@@ -60,9 +71,8 @@ class TransferEvent implements StreamEvent {
   }
 }
 
-interface EventStream {
+export interface EventStream {
   append(event: StreamEvent): Promise<void>
-
   project<T>(fold: (result: T, event: StreamEvent) => T, initialValue: T): Promise<T>
 }
 
@@ -89,19 +99,19 @@ export function CreateAccount(eventStream: EventStream) {
 }
 
 export function CreditAccount(eventStream: EventStream) {
-  return async (accountName: string, value: number) => {
-    await eventStream.append(new TransactEvent(accountName, value))
+  return async (accountName: string, value: number, date: string, target?: string) => {
+    await eventStream.append(new TransactEvent(accountName, date, value, target))
   }
 }
 
 export function DebitAccount(eventStream: EventStream) {
-  return async (accountName: string, value: number) => {
-    await eventStream.append(new TransactEvent(accountName, -value))
+  return async (accountName: string, value: number, date: string, target?: string) => {
+    await eventStream.append(new TransactEvent(accountName, date, -value, target))
   }
 }
 
 export function TransferFunds(eventStream: EventStream) {
-  return async (sourceAccount: string, destinationAccount: string, value: number) => {
+  return async (sourceAccount: string, destinationAccount: string, value: number, date: string) => {
     await eventStream.append(new TransferEvent(sourceAccount, destinationAccount, value))
   }
 }
@@ -156,6 +166,19 @@ export function CreateWeeklyTarget(eventStream: EventStream) {
   }
 }
 
+export function CreateYearlyTarget(eventStream: EventStream) {
+  return async (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => {
+    await eventStream.append(new CreateTargetEvent(
+      startDate,
+      targetName,
+      targetValue,
+      "YEARLY",
+      priority,
+      allocateFrom,
+    ))
+  }
+}
+
 export function GetTargets(eventStream: EventStream) {
   return async (date: string): Promise<{[targetName: string]: Target}> => {
     return eventStream.project((result, event) => {
@@ -163,12 +186,109 @@ export function GetTargets(eventStream: EventStream) {
         return {
           ...result,
           [event.targetName]: {
-            deltaToNextPayment: event.targetValue * triggersBetween(event.startDate, date, event.cadence),
-            fundedUntil: event.startDate,
-            priority: event.priority
+            priority: event.priority,
+            cadence: event.cadence,
+            values: [[event.startDate, event.targetValue]]
           }
         }
       }
+      return result
+    }, {})
+  }
+}
+
+export function GetExpendituresByTarget(eventStream: EventStream) {
+  return async (date: string) => {
+    return eventStream.project((result, event) => {
+      if (TransactEvent.is(event) && event.target && !(new LocalDate(event.date).isAfter(new LocalDate(date)))) return {
+        ...result,
+        [event.target]: (result[event.target] || 0) - event.value,
+      }
+
+      return result
+    }, {})
+  }
+}
+
+const scheduleGenerators = {
+  "WEEKLY": weeklySavingSchedule,
+  "MONTHLY": monthlySavingSchedule,
+  "YEARLY": yearlySavingSchedule,
+}
+
+export function GetRunway(eventStream: EventStream) {
+  return async (date: string): Promise<{[targetName: string]: string}> => {
+    const targets = await GetTargets(eventStream)(date)
+    const balances = await GetBalances(eventStream)()
+    const totalBalance = Object.keys(balances).reduce((total, account) => total + balances[account], 0)
+    const expendituresByTarget = await GetExpendituresByTarget(eventStream)(date)
+    const currentBudgets = await GetBudgets(eventStream)(date)
+    const overspend = Object.keys(currentBudgets).reduce((result, target) => ({
+      ...result,
+      [target]: currentBudgets[target] < 0 ? -currentBudgets[target] : 0
+    }), {})
+
+    const savingSchedule = combinedSavingSchedule(
+      Object.keys(targets).map(targetName => [
+        scheduleGenerators[targets[targetName].cadence](targetName, targets[targetName].values),
+        targets[targetName].priority
+      ])
+    )
+
+    const runway = Object.keys(targets).reduce((result, nextName) => ({
+      ...result,
+      [nextName]: null
+    }), {})
+
+    let totalAllocation = 0
+
+    for(let nextGoal = savingSchedule.next(); !nextGoal.done && totalAllocation < totalBalance; nextGoal = savingSchedule.next()) {
+      let amountToAllocate = 0
+      expendituresByTarget[nextGoal.value.target] = (expendituresByTarget[nextGoal.value.target] || 0) - nextGoal.value.amount
+      if(expendituresByTarget[nextGoal.value.target] < 0) {
+        amountToAllocate = -expendituresByTarget[nextGoal.value.target]
+        expendituresByTarget[nextGoal.value.target] = 0
+      }
+
+      if(amountToAllocate + overspend[nextGoal.value.target] + totalAllocation <= totalBalance) {
+        totalAllocation += amountToAllocate
+        runway[nextGoal.value.target] = nextGoal.value.date
+      } else {
+        break
+      }
+    }
+
+    return runway
+  }
+}
+
+export function GetBudgets(eventStream: EventStream) {
+  return async (date: string): Promise<{[targetName: string]: number}> => {
+    const localDate = new LocalDate(date)
+    return eventStream.project((result, event) => {
+      if (CreateTargetEvent.is(event)) {
+        const schedule = scheduleGenerators[event.cadence](event.targetName, [[event.startDate, event.targetValue]])
+
+        let accruedBudget = 0
+        for(let trigger = schedule.next(); !trigger.done && !(new LocalDate(trigger.value.date)).isAfter(localDate); trigger = schedule.next()) {
+          accruedBudget += trigger.value.amount
+        }
+
+        return {
+          ...result,
+          [event.targetName]: accruedBudget
+        }
+      }
+
+      if (TransactEvent.is(event)) {
+        if(!event.target) return result
+
+        return {
+          ...result,
+          [event.target]: result[event.target] + event.value
+        }
+      }
+
       return result
     }, {})
   }
@@ -187,11 +307,18 @@ class CreateTargetEvent implements StreamEvent {
   startDate: string
   targetName: string
   targetValue: number
-  cadence: "WEEKLY" | "MONTHLY"
+  cadence: "WEEKLY" | "MONTHLY" | "YEARLY"
   priority: number
   allocateFrom: string
 
-  constructor(startDate: string, targetName: string, targetValue: number, cadence: "WEEKLY" | "MONTHLY", priority: number, allocateFrom: string) {
+  constructor(
+    startDate: string,
+    targetName: string,
+    targetValue: number,
+    cadence: "WEEKLY" | "MONTHLY" | "YEARLY",
+    priority: number,
+    allocateFrom: string
+  ) {
     this.startDate = startDate
     this.targetName = targetName
     this.targetValue = targetValue
@@ -225,17 +352,6 @@ class LocalDate {
     }
   }
 
-  plusDays(n: number): LocalDate {
-    const newDate = new Date(this.datestring)
-    newDate.setDate(newDate.getDate() + n)
-    return new LocalDate(`${newDate.getFullYear()}-${newDate.getMonth() + 1}-${newDate.getDate() + 1}`)
-  }
-
-  plusMonths(n: number): LocalDate {
-    if (this.month === 12) return new LocalDate(this.year + 1, 1, this.day);
-    return new LocalDate(this.year, this.month + 1, this.day)
-  }
-
   isAfter(other: LocalDate): boolean {
     if (this.year > other.year) return true
     if (this.year === other.year && this.month > other.month) return true
@@ -243,30 +359,8 @@ class LocalDate {
   }
 }
 
-function triggersBetween(start: string, end: string, cadence: "WEEKLY" | "MONTHLY") {
-  let startDate = new LocalDate(start)
-  const endDate = new LocalDate(end)
-  let triggers = 0
-
-  while (!startDate.isAfter(endDate)) {
-    switch (cadence) {
-      case "WEEKLY":
-        startDate = startDate.plusDays(7)
-        break
-      case "MONTHLY":
-        startDate = startDate.plusMonths(1)
-        break
-      default:
-        throw new Error(`Unsupported cadence string: ${cadence}`)
-    }
-    triggers++
-  }
-
-  return triggers
-}
-
 export interface Target {
-  fundedUntil: string
-  deltaToNextPayment: number
-  priority: number
+  priority: number,
+  cadence: "WEEKLY" | "MONTHLY" | "YEARLY",
+  values: Array<[string, number]>
 }

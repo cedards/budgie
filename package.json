@@ -11,5 +11,8 @@
   "workspaces": [
     "applications/*",
     "planning"
-  ]
+  ],
+  "devDependencies": {
+    "@types/jest": "^26.0.23"
+  }
 }
