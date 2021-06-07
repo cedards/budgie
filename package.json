@@ -10,7 +10,8 @@
   "license": "UNLICENSED",
   "workspaces": [
     "applications/*",
-    "planning"
+    "planning",
+    "fs-plugin"
   ],
   "devDependencies": {
     "@types/jest": "^26.0.23"

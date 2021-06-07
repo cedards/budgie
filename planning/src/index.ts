@@ -5,7 +5,7 @@ import {
   yearlySavingSchedule
 } from "./saving-schedules";
 
-interface StreamEvent {
+export interface StreamEvent {
   type: string
   version: number
 }
