@@ -3,7 +3,7 @@ import {
   CreateMonthlyTarget,
   CreateWeeklyTarget,
   CreateYearlyTarget, CreditAccount, DebitAccount,
-  EventStream, GetBudgets, GetRunway, TransferFunds
+  EventStream, GetBalances, GetBudgets, GetRunway, TransferFunds
 } from "@budgie/planning";
 
 const cents = (str: string) => Math.round(parseFloat(str) * 100)
@@ -19,6 +19,15 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
       create: (name: string) => {
         perform(CreateAccount(eventStream)(name))
       },
+      balances: () => {
+        GetBalances(eventStream)().then(balances => {
+          out("\nCurrent balances:")
+          Object.keys(balances).forEach(accountName => {
+            out("  ", accountName, ":", balances[accountName])
+          })
+          out("")
+        })
+      }
     },
     target: {
       create: (name: string, cadence: string, startDate: string, amount: string, priority: string) => {
