@@ -6,11 +6,21 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "author": "cedarwards",
   "license": "UNLICENSED",
+  "dependencies": {
+    "@budgie/fs-plugin": "1.0.0",
+    "@budgie/planning": "workspace:planning"
+  },
   "devDependencies": {
+    "@types/jest": "^26.0.22",
+    "@types/node": "^15.12.1",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.5",
+    "ts-node": "^10.0.0",
     "typescript": "^4.2.4"
   }
 }
