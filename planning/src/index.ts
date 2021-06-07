@@ -41,12 +41,14 @@ class TransactEvent implements StreamEvent {
   date: string
   value: number
   target: string | null
+  memo: string | null
 
-  constructor(accountName: string, date: string, value: number, target?: string) {
+  constructor(accountName: string, date: string, value: number, target?: string, memo?: string) {
     this.accountName = accountName
     this.date = date
     this.value = value
     this.target = target || null
+    this.memo = memo || null
   }
 }
 
@@ -99,14 +101,14 @@ export function CreateAccount(eventStream: EventStream) {
 }
 
 export function CreditAccount(eventStream: EventStream) {
-  return async (accountName: string, value: number, date: string, target?: string) => {
-    await eventStream.append(new TransactEvent(accountName, date, value, target))
+  return async (accountName: string, value: number, date: string, target?: string, memo?: string) => {
+    await eventStream.append(new TransactEvent(accountName, date, value, target, memo))
   }
 }
 
 export function DebitAccount(eventStream: EventStream) {
-  return async (accountName: string, value: number, date: string, target?: string) => {
-    await eventStream.append(new TransactEvent(accountName, date, -value, target))
+  return async (accountName: string, value: number, date: string, target?: string, memo?: string) => {
+    await eventStream.append(new TransactEvent(accountName, date, -value, target, memo))
   }
 }
 

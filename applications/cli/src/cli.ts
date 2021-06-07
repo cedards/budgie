@@ -55,11 +55,11 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
         }
       }
     },
-    credit: (account: string, amount: string, target: string, date: string) => {
-      perform(CreditAccount(eventStream)(account, cents(amount), date || today, target))
+    credit: (account: string, amount: string, memo: string, target: string, date: string) => {
+      perform(CreditAccount(eventStream)(account, cents(amount), date || today, target, memo))
     },
-    debit: (account: string, amount: string, target: string, date: string) => {
-      perform(DebitAccount(eventStream)(account, cents(amount), date || today, target))
+    debit: (account: string, amount: string, memo: string, target: string, date: string) => {
+      perform(DebitAccount(eventStream)(account, cents(amount), date || today, target, memo))
     },
     transfer: (from: string, to: string, amount: string, date: string) => {
       perform(TransferFunds(eventStream)(from, to, cents(amount), date || today))
