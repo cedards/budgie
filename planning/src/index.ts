@@ -8,7 +8,8 @@ export {
   CreditAccount,
   DebitAccount,
   GetBalances,
-  TransferFunds
+  TransferFunds,
+  EVENT_MIGRATIONS
 } from "./bookkeeping"
 
 export {

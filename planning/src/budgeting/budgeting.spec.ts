@@ -1,5 +1,13 @@
 import {EventStream, InMemoryEventStream} from "../event-stream";
-import {CreateMonthlyTarget, CreateWeeklyTarget, GetBudgets, GetRunway, GetTargets, Target} from "./index";
+import {
+  CreateMonthlyTarget,
+  CreateWeeklyTarget,
+  GetBudgets,
+  GetExpendituresByTarget,
+  GetRunway,
+  GetTargets,
+  Target
+} from "./index";
 import {CreateAccount, CreditAccount, DebitAccount} from "../bookkeeping";
 
 describe("budgeting", () => {
@@ -42,19 +50,19 @@ describe("budgeting", () => {
 
     expect(await availableGroceryMoneyOn(startDate)).toEqual(50)
 
-    await debitAccount("Checking", 25, startDatePlus(2), "groceries")
+    await debitAccount("Checking", { groceries: 25 }, startDatePlus(2))
 
     expect(await availableGroceryMoneyOn(startDatePlus(2))).toEqual(25)
 
     expect(await availableGroceryMoneyOn(startDatePlus(7))).toEqual(75)
 
     // large expense that is going to be split with friends:
-    await debitAccount("Checking", 100, startDatePlus(8), "groceries")
+    await debitAccount("Checking", { groceries: 100 }, startDatePlus(8))
 
     expect(await availableGroceryMoneyOn(startDatePlus(8))).toEqual(-25)
 
     // when friends pay me back for their half of the expense:
-    await creditAccount("Checking", 50, startDatePlus(9), "groceries")
+    await creditAccount("Checking", { groceries: 50 }, startDatePlus(9))
 
     expect(await availableGroceryMoneyOn(startDatePlus(9))).toEqual(25)
   })
@@ -89,13 +97,33 @@ describe("budgeting", () => {
     expect(await groceryRunwayAsOf(startDate)).toEqual(startDatePlus(7*4))
 
     // make a grocery expenditure that's within budget:
-    await debitAccount("Checking", 100, startDatePlus(1), "groceries")
+    await debitAccount("Checking", { groceries: 100 }, startDatePlus(1))
     // runway doesn't change:
     expect(await groceryRunwayAsOf(startDatePlus(1))).toEqual(startDatePlus(7*4))
 
     // but if I overspend:
-    await debitAccount("Checking", 100, startDatePlus(1), "groceries")
+    await debitAccount("Checking", { groceries: 100 }, startDatePlus(1))
     // then runway decreases, because I've drawn money from the pool that allocation doesn't account for:
     expect(await groceryRunwayAsOf(startDatePlus(1))).toEqual(startDatePlus(7*3))
+  })
+
+  test("Paying rent and household expenses together", async () => {
+    const creditAccount = CreditAccount(eventStream)
+    const debitAccount = DebitAccount(eventStream)
+
+    await createAccount("Checking")
+    await creditAccount("Checking", 1000, startDate)
+
+    await createMonthlyTarget(startDate, "rent", 800, 1, "Checking")
+    await createMonthlyTarget(startDate, "supplies", 100, 1, "Checking")
+
+    await debitAccount("Checking", { rent: 800, supplies: 50 }, startDatePlus(1))
+
+    const expenditures = await GetExpendituresByTarget(eventStream)(startDatePlus(1))
+
+    expect(expenditures["rent"]).toEqual(800)
+    expect(expenditures["supplies"]).toEqual(50)
+    expect((await getBudgets(startDatePlus(1)))["supplies"]).toEqual(50)
+    expect((await getBudgets(startDatePlus(1)))["rent"]).toEqual(0)
   })
 })

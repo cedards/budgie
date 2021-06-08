@@ -32,4 +32,12 @@ test("bookkeeping", async () => {
     "Account A": 600,
     "Account B": 100,
   })
+
+  // Itemized transactions are summed up when applied to balances:
+  await debitAccount("Account A", { targetA: 100, targetB: 25, _: 50 }, startDatePlus(1))
+
+  expect(await getBalances()).toEqual({
+    "Account A": 425,
+    "Account B": 100,
+  })
 })

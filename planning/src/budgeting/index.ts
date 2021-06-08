@@ -68,9 +68,19 @@ export function GetTargets(eventStream: EventStream) {
 export function GetExpendituresByTarget(eventStream: EventStream) {
   return async (date: string) => {
     return eventStream.project((result, event) => {
-      if (TransactEvent.is(event) && event.target && !(new LocalDate(event.date).isAfter(new LocalDate(date)))) return {
-        ...result,
-        [event.target]: (result[event.target] || 0) - event.value,
+      if (TransactEvent.is(event) && !(new LocalDate(event.date).isAfter(new LocalDate(date)))) {
+        const mergedTotals = Object.keys(event.itemizedAmounts).reduce((totals, nextTarget) => {
+          if(nextTarget === "_") return totals
+          return {
+            ...totals,
+            [nextTarget]: (result[nextTarget] || 0) - event.itemizedAmounts[nextTarget]
+          }
+        }, {})
+
+        return {
+          ...result,
+          ...mergedTotals
+        }
       }
 
       return result
@@ -149,11 +159,17 @@ export function GetBudgets(eventStream: EventStream) {
       }
 
       if (TransactEvent.is(event)) {
-        if (!event.target) return result
+        const newItemizedTotals = Object.keys(event.itemizedAmounts).reduce((totals, nextKey) => {
+          if(nextKey === "_") return totals
+          return {
+            ...totals,
+            [nextKey]: (result[nextKey] || 0) + event.itemizedAmounts[nextKey]
+          }
+        }, {})
 
         return {
           ...result,
-          [event.target]: result[event.target] + event.value
+          ...newItemizedTotals
         }
       }
 

@@ -22,6 +22,17 @@ const multichar = (char: string, num: number) => {
   return str
 }
 
+function parseAmount(amount: string) {
+  if(amount.indexOf("=") === -1) return { "_": cents(amount) }
+  return amount.split(",").reduce((itemizedAmounts, entry) => {
+    const [target, subamount] = entry.split("=")
+    return {
+      ...itemizedAmounts,
+      [target]: (itemizedAmounts[target] || 0) + cents(subamount)
+    }
+  }, {})
+}
+
 export function Commands(eventStream: EventStream, out: (...strings: string[]) => any) {
   const perform = (work: Promise<any>) => { work.then(() => out("done!")) }
   const today = new Date().toISOString().substr(0,10)
@@ -81,11 +92,11 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
         }
       }
     },
-    credit: (account: string, amount: string, memo: string, target: string, date: string) => {
-      perform(CreditAccount(eventStream)(account, cents(amount), date || today, target, memo))
+    credit: (account: string, amount: string, memo: string, date: string) => {
+      perform(CreditAccount(eventStream)(account, parseAmount(amount), date || today, memo))
     },
-    debit: (account: string, amount: string, memo: string, target: string, date: string) => {
-      perform(DebitAccount(eventStream)(account, cents(amount), date || today, target, memo))
+    debit: (account: string, amount: string, memo: string, date: string) => {
+      perform(DebitAccount(eventStream)(account, parseAmount(amount), date || today, memo))
     },
     transfer: (from: string, to: string, amount: string, date: string) => {
       perform(TransferFunds(eventStream)(from, to, cents(amount), date || today))
