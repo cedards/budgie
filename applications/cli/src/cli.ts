@@ -8,11 +8,32 @@ import {
 
 const cents = (str: string) => Math.round(parseFloat(str) * 100)
 
-const formatAsDollars = (cents: number) => `${Math.floor(cents / 100)}.${cents % 100 < 10 ? 0 : ''}${cents % 100}`
+const formatAsDollars = (cents: number) => {
+  const absoluteCents = Math.abs(cents)
+  const baseString = `${Math.floor(absoluteCents / 100)}.${absoluteCents % 100 < 10 ? 0 : ''}${absoluteCents % 100}`
+  return cents < 0
+    ? `\x1b[31m(${baseString})\x1b[0m`
+    : baseString
+}
+
+const multichar = (char: string, num: number) => {
+  let str = ""
+  for(let i = 0; i < num; i++) str += char
+  return str
+}
 
 export function Commands(eventStream: EventStream, out: (...strings: string[]) => any) {
   const perform = (work: Promise<any>) => { work.then(() => out("done!")) }
   const today = new Date().toISOString().substr(0,10)
+
+  function printAsLedger<T>(title: string, data: {string: T}, valueFormatter: (value: T) => string = (value: T) => value.toString()) {
+    const leftColumnWidth = Object.keys(data).reduce((max, next) => next.length > max ? next.length : max, 0) + 3
+    out(`\n${title}:`)
+    Object.keys(data).forEach(item => {
+      out(`  ${item}${multichar('.', leftColumnWidth - item.length)}${valueFormatter(data[item])}`)
+    })
+    out("")
+  }
 
   return {
     account: {
@@ -20,12 +41,8 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
         perform(CreateAccount(eventStream)(name))
       },
       balances: () => {
-        GetBalances(eventStream)().then(balances => {
-          out("\nCurrent balances:")
-          Object.keys(balances).forEach(accountName => {
-            out("  ", accountName, ":", balances[accountName])
-          })
-          out("")
+        GetBalances(eventStream)().then((balances: {string: number}) => {
+          printAsLedger("Current balances", balances, formatAsDollars)
         })
       }
     },
@@ -74,21 +91,13 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
       perform(TransferFunds(eventStream)(from, to, cents(amount), date || today))
     },
     budgets: () => {
-      GetBudgets(eventStream)(today).then(budgets => {
-        out("\nCurrent budgets:")
-        Object.keys(budgets).forEach(targetName => {
-          out("  ", targetName, ":", formatAsDollars(budgets[targetName]))
-        })
-        out("")
+      GetBudgets(eventStream)(today).then((budgets: {string: number}) => {
+        printAsLedger("Current budgets", budgets, formatAsDollars)
       })
     },
     runway: () => {
-      GetRunway(eventStream)(today).then(runway => {
-        out("\nCurrent runway:")
-        Object.keys(runway).forEach(targetName => {
-          out("  ", targetName, ":", runway[targetName])
-        })
-        out("")
+      GetRunway(eventStream)(today).then((runway: {string: string}) => {
+        printAsLedger("Current runway", runway)
       })
     }
   }
