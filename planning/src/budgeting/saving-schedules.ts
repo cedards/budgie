@@ -1,3 +1,5 @@
+import {sortBy} from "../language-support";
+
 const shiftDays = (days: number) => (date: string) => {
   const [year, month, day] = date.split("-").map(n => parseInt(n))
   return new Date(year, month - 1, day + days).toISOString().substr(0, 10)
@@ -11,31 +13,6 @@ const shiftMonths = (months: number) => (date: string) => {
 const shiftYears = (years: number) => (date: string) => {
   const [year, month, day] = date.split("-").map(n => parseInt(n))
   return new Date(year + years, month - 1, day).toISOString().substr(0, 10)
-}
-
-function sortBy<T>(...mappers: Array<(originalValue: T) => any>) {
-  return function(list: Array<T>): Array<T> {
-    const comparator: (a: T, b: T) => number = mappers
-      .concat([])
-      .reverse()
-      .reduce((composedComparator: null | ((a: T, b: T) => number), mapper) => {
-        return (a: T, b: T) => {
-          const aValue = mapper(a)
-          const bValue = mapper(b)
-
-          if(aValue === bValue) {
-            if(composedComparator === null) return 0
-            return composedComparator(a, b)
-          }
-
-          return aValue < bValue ? -1 : 1
-        }
-      }, null)
-
-    const newList = list.concat([])
-    newList.sort(comparator)
-    return newList
-  }
 }
 
 const savingScheduleGenerator = (

@@ -27,3 +27,28 @@ export class LocalDate {
     return this.year === other.year && this.month === other.month && this.day > other.day;
   }
 }
+
+export function sortBy<T>(...mappers: Array<(originalValue: T) => any>) {
+  return function (list: Array<T>): Array<T> {
+    const comparator: (a: T, b: T) => number = mappers
+      .concat([])
+      .reverse()
+      .reduce((composedComparator: null | ((a: T, b: T) => number), mapper) => {
+        return (a: T, b: T) => {
+          const aValue = mapper(a)
+          const bValue = mapper(b)
+
+          if (aValue === bValue) {
+            if (composedComparator === null) return 0
+            return composedComparator(a, b)
+          }
+
+          return aValue < bValue ? -1 : 1
+        }
+      }, null)
+
+    const newList = list.concat([])
+    newList.sort(comparator)
+    return newList
+  }
+}

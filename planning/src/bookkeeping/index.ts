@@ -1,4 +1,5 @@
 import {EventStream, StreamEvent} from "../event-stream";
+import {sortBy} from "../language-support";
 
 class CreateAccountEvent implements StreamEvent {
   public static type = "CREATE_ACCOUNT"
@@ -85,11 +86,13 @@ class TransferEvent implements StreamEvent {
   sourceAccount: string
   destinationAccount: string
   value: number
+  date: string
 
-  constructor(sourceAccount: string, destinationAccount: string, value: number) {
+  constructor(sourceAccount: string, destinationAccount: string, value: number, date: string) {
     this.sourceAccount = sourceAccount
     this.destinationAccount = destinationAccount
     this.value = value
+    this.date = date
   }
 }
 
@@ -100,7 +103,7 @@ export function CreateAccount(eventStream: EventStream) {
 }
 
 export function CreditAccount(eventStream: EventStream) {
-  return async (accountName: string, amount: number | Itemization, date: string, target?: string, memo?: string) => {
+  return async (accountName: string, amount: number | Itemization, date: string, memo?: string) => {
     const itemizedAmounts = (typeof amount === "number")
       ? { ["_" as string] : amount }
       : Object.keys(amount).reduce((result, nextKey) => ({...result, [nextKey]: amount[nextKey]}), {})
@@ -109,7 +112,7 @@ export function CreditAccount(eventStream: EventStream) {
 }
 
 export function DebitAccount(eventStream: EventStream) {
-  return async (accountName: string, amount: number | Itemization, date: string, target?: string, memo?: string) => {
+  return async (accountName: string, amount: number | Itemization, date: string, memo?: string) => {
     const itemizedAmounts = (typeof amount === "number")
       ? { ["_" as string] : -amount }
       : Object.keys(amount).reduce((result, nextKey) => ({...result, [nextKey]: -amount[nextKey]}), {})
@@ -119,7 +122,7 @@ export function DebitAccount(eventStream: EventStream) {
 
 export function TransferFunds(eventStream: EventStream) {
   return async (sourceAccount: string, destinationAccount: string, value: number, date: string) => {
-    await eventStream.append(new TransferEvent(sourceAccount, destinationAccount, value))
+    await eventStream.append(new TransferEvent(sourceAccount, destinationAccount, value, date))
   }
 }
 
@@ -144,5 +147,45 @@ export function GetBalances(eventStream: EventStream) {
 
       return result
     }, {})
+  }
+}
+
+export function GetTransactions(eventStream: EventStream) {
+  return async (account) => {
+    return eventStream.project((result, event) => {
+      if (TransactEvent.is(event) && event.accountName === account) return result.concat({
+        date: event.date,
+        amount: event.itemizedAmounts,
+        memo: event.memo
+      })
+
+      if (TransferEvent.is(event) && event.sourceAccount === account) return result.concat({
+        date: event.date,
+        amount: {
+          _: -event.value
+        },
+        memo: `transfer to ${event.destinationAccount}`
+      })
+
+      if (TransferEvent.is(event) && event.destinationAccount === account) return result.concat({
+        date: event.date,
+        amount: {
+          _: event.value
+        },
+        memo: `transfer from ${event.sourceAccount}`
+      })
+
+      return result
+    }, []).then(unsortedTransactions => {
+      return sortBy((transaction: { date: string, amount: { [target: string]: number }, memo: string }) => transaction.date)(unsortedTransactions)
+        .reduce((sortedEntriesWithBalances, transaction) => {
+          return sortedEntriesWithBalances.concat({
+            transaction: transaction,
+            balance: Object.keys(transaction.amount).reduce((total, target) => {
+              return total + transaction.amount[target]
+            }, (sortedEntriesWithBalances[sortedEntriesWithBalances.length-1] || { balance: 0 }).balance)
+          })
+        }, [])
+    })
   }
 }

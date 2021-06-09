@@ -6,7 +6,7 @@ import {
   yearlySavingSchedule
 } from "./saving-schedules";
 import {GetBalances, TransactEvent} from "../bookkeeping";
-import {LocalDate} from "../date-support";
+import {LocalDate} from "../language-support";
 
 export function CreateMonthlyTarget(eventStream: EventStream) {
   return async (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => {

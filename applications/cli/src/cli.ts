@@ -2,8 +2,15 @@ import {
   CreateAccount,
   CreateMonthlyTarget,
   CreateWeeklyTarget,
-  CreateYearlyTarget, CreditAccount, DebitAccount,
-  EventStream, GetBalances, GetBudgets, GetRunway, TransferFunds
+  CreateYearlyTarget,
+  CreditAccount,
+  DebitAccount,
+  EventStream,
+  GetBalances,
+  GetBudgets,
+  GetRunway,
+  TransferFunds,
+  GetTransactions,
 } from "@budgie/planning";
 
 const cents = (str: string) => Math.round(parseFloat(str) * 100)
@@ -54,6 +61,13 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
       balances: () => {
         GetBalances(eventStream)().then((balances: {string: number}) => {
           printAsLedger("Current balances", balances, formatAsDollars)
+        })
+      },
+      transactions: (account) => {
+        GetTransactions(eventStream)(account).then((transactions: any[]) => {
+          transactions.reverse().forEach(entry => {
+            out(`${entry.transaction.date} ${JSON.stringify(entry.transaction.amount)} ${entry.transaction.memo}  Balance: ${formatAsDollars(entry.balance)}`)
+          })
         })
       }
     },

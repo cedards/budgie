@@ -9,6 +9,7 @@ export {
   DebitAccount,
   GetBalances,
   TransferFunds,
+  GetTransactions,
   EVENT_MIGRATIONS
 } from "./bookkeeping"
 
