@@ -59,6 +59,31 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
     out("")
   }
 
+  function printAsTable<T>(title: string, data: T[], columns: Array<[string, (record: T) => string]>) {
+    const columnWidths = data.reduce((widths, record) => {
+      return columns.reduce((newWidths, [heading, getter]) => {
+        const cellContents = getter(record);
+        const columnWidthForThisRow = cellContents !== null && cellContents !== undefined
+          ? removeColorCodes(cellContents).length
+          : 0
+
+        return {
+          ...newWidths,
+          [heading]: columnWidthForThisRow > newWidths[heading] ? columnWidthForThisRow : newWidths[heading]
+        }
+      }, widths)
+    }, columns.reduce((initialWidths, [heading, _]) => (
+      {...initialWidths, [heading]: heading.length}
+    ), {}))
+
+    out(`${title}:\n`)
+    out(columns.map(([heading, _]) => pad(heading, columnWidths[heading])).join(" | "))
+    out(columns.map(([heading, _]) => multichar("-", columnWidths[heading])).join("-|-"))
+    data.forEach(record => {
+      out(columns.map(([heading, getter]) => pad(getter(record), columnWidths[heading])).join(" | "))
+    })
+  }
+
   return {
     account: {
       create: (name: string) => {
@@ -70,24 +95,20 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
         })
       },
       transactions: (account) => {
-        GetTransactions(eventStream)(account).then((transactions: any[]) => {
-          const columnWidths = transactions.reduce((widths, entry) => {
-            const totalChange = Object.keys(entry.transaction.amount).reduce((sum, target) => sum + entry.transaction.amount[target], 0)
-            const balanceWidth = removeColorCodes(formatAsDollars(entry.balance)).length
-            const changeWidth = removeColorCodes(formatAsDollars(totalChange)).length;
-            const memoWidth = entry.transaction.memo ? entry.transaction.memo.length : 0;
-            return {
-              balance: balanceWidth > widths.balance ? balanceWidth : widths.balance,
-              change: changeWidth > widths.change ? changeWidth : widths.change,
-              memo: memoWidth > widths.memo ? memoWidth : widths.memo,
-            }
-          }, { balance: "balance".length, change: "change".length, memo: "memo".length })
-          out(`date       | ${pad("balance", columnWidths.balance)} | ${pad("change", columnWidths.change)} | memo`)
-          out(`-----------|-${multichar('-', columnWidths.balance)}-|-${multichar('-', columnWidths.change)}-|-${multichar('-', columnWidths.memo)}`)
-          transactions.reverse().forEach(entry => {
-            const totalChange = Object.keys(entry.transaction.amount).reduce((sum, target) => sum + entry.transaction.amount[target], 0)
-            out(`${entry.transaction.date} | ${pad(formatAsDollars(entry.balance), columnWidths.balance)} | ${pad(formatAsDollars(totalChange), columnWidths.change)} | ${entry.transaction.memo}`)
-          })
+        GetTransactions(eventStream)(account).then((
+          entries: {
+            transaction: { date: string, memo: string, amount: { [target: string]: number } },
+            balance: number
+          }[]
+        ) => {
+          printAsTable(`Transactions for ${account}`, entries.reverse(), [
+            ["date", record => record.transaction.date],
+            ["balance", record => formatAsDollars(record.balance)],
+            ["change", record => formatAsDollars(
+              Object.keys(record.transaction.amount).reduce((sum, target) => sum + record.transaction.amount[target], 0)
+            )],
+            ["memo", record => record.transaction.memo]
+          ])
         })
       }
     },
