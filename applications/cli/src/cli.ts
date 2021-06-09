@@ -9,8 +9,8 @@ import {
   GetBalances,
   GetBudgets,
   GetRunway,
-  TransferFunds,
   GetTransactions,
+  TransferFunds,
 } from "@budgie/planning";
 
 const cents = (str: string) => Math.round(parseFloat(str) * 100)
@@ -19,7 +19,7 @@ const formatAsDollars = (cents: number) => {
   const absoluteCents = Math.abs(cents)
   const baseString = `${Math.floor(absoluteCents / 100)}.${absoluteCents % 100 < 10 ? 0 : ''}${absoluteCents % 100}`
   return cents < 0
-    ? `\x1b[31m(${baseString})\x1b[0m`
+    ? `\x1b[91m(${baseString})\x1b[39m`
     : baseString
 }
 
@@ -27,6 +27,12 @@ const multichar = (char: string, num: number) => {
   let str = ""
   for(let i = 0; i < num; i++) str += char
   return str
+}
+
+const removeColorCodes = str => str.replace(/\x1b\[\d+m/g, '')
+
+const pad = (str: string, length: number) => {
+  return `${str}${multichar(' ', length - removeColorCodes(str).length)}`
 }
 
 function parseAmount(amount: string) {
@@ -65,8 +71,22 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
       },
       transactions: (account) => {
         GetTransactions(eventStream)(account).then((transactions: any[]) => {
+          const columnWidths = transactions.reduce((widths, entry) => {
+            const totalChange = Object.keys(entry.transaction.amount).reduce((sum, target) => sum + entry.transaction.amount[target], 0)
+            const balanceWidth = removeColorCodes(formatAsDollars(entry.balance)).length
+            const changeWidth = removeColorCodes(formatAsDollars(totalChange)).length;
+            const memoWidth = entry.transaction.memo ? entry.transaction.memo.length : 0;
+            return {
+              balance: balanceWidth > widths.balance ? balanceWidth : widths.balance,
+              change: changeWidth > widths.change ? changeWidth : widths.change,
+              memo: memoWidth > widths.memo ? memoWidth : widths.memo,
+            }
+          }, { balance: "balance".length, change: "change".length, memo: "memo".length })
+          out(`date       | ${pad("balance", columnWidths.balance)} | ${pad("change", columnWidths.change)} | memo`)
+          out(`-----------|-${multichar('-', columnWidths.balance)}-|-${multichar('-', columnWidths.change)}-|-${multichar('-', columnWidths.memo)}`)
           transactions.reverse().forEach(entry => {
-            out(`${entry.transaction.date} ${JSON.stringify(entry.transaction.amount)} ${entry.transaction.memo}  Balance: ${formatAsDollars(entry.balance)}`)
+            const totalChange = Object.keys(entry.transaction.amount).reduce((sum, target) => sum + entry.transaction.amount[target], 0)
+            out(`${entry.transaction.date} | ${pad(formatAsDollars(entry.balance), columnWidths.balance)} | ${pad(formatAsDollars(totalChange), columnWidths.change)} | ${entry.transaction.memo}`)
           })
         })
       }
