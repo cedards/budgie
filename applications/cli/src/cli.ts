@@ -23,37 +23,46 @@ export function Cli(
   out: (...strings: string[]) => any,
   commands: CommandOrSubcommands
 ) {
-  async function execute(command: CommandOrSubcommands, args: string[]): Promise<any> {
-    function help() {
-      return args[0] === "help" || args[0] === "--help" || args[0] === "-h";
-    }
+  function showAvailableCommands(command: CommandOrSubcommands) {
+    out("\nAvailable commands:\n")
+    Object.keys(command).forEach(key => out(key))
+    out("")
+  }
 
-    function showAvailableCommands() {
-      out("\nAvailable commands:\n")
-      Object.keys(command).forEach(key => out(key))
-      out("")
-    }
+  function showUsage(command: Command) {
+    out("Usage:", command.toString().substr(0, command.toString().indexOf(")") + 1))
+  }
 
-    function showUsage() {
-      out("Usage:", command.toString().substr(0, command.toString().indexOf(")") + 1))
-    }
+  function help(args: string[]) {
+    return args[0] === "help" || args[0] === "--help" || args[0] === "-h";
+  }
 
-    if(typeof command !== "function") {
-      if(!args[0] || help()) {
-        showAvailableCommands()
-      } else if(!command[args[0]]) {
+  async function execute(commandOrSubcommand: CommandOrSubcommands, args: string[]): Promise<any> {
+
+    async function handleSubcommand(command: CommandOrSubcommands) {
+      if (!args[0] || help(args)) {
+        showAvailableCommands(command)
+      } else if (!command[args[0]]) {
         out("Unknown command:", args[0])
-        showAvailableCommands()
+        showAvailableCommands(command)
       } else {
         await execute(command[args[0]], args.splice(1))
       }
-    } else {
-      if (help()) {
-        showUsage();
+    }
+
+    async function handleCommand(command: Command) {
+      if (help(args)) {
+        showUsage(command);
       } else {
         await command.apply({}, args)
       }
     }
+
+    await (typeof commandOrSubcommand === "function"
+      ? handleCommand(commandOrSubcommand)
+      : handleSubcommand(commandOrSubcommand)
+    )
+
   }
 
   return async (args: string[]) => {
