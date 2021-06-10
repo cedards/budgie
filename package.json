@@ -4,7 +4,8 @@
   "description": "Personal budgeting tool",
   "main": "applications/cli/dist/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "publish": "yarn workspace @budgie/cli bundle && unzip ./applications/cli/bundle.zip"
   },
   "author": "cedarwards",
   "license": "UNLICENSED",
