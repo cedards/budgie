@@ -19,4 +19,5 @@ export {
   CreateYearlyTarget,
   GetBudgets,
   GetRunway,
+  GetSpendingRate
 } from "./budgeting"

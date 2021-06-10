@@ -1,16 +1,16 @@
 import {sortBy} from "../language-support";
 
-const shiftDays = (days: number) => (date: string) => {
+export const shiftDays = (days: number) => (date: string) => {
   const [year, month, day] = date.split("-").map(n => parseInt(n))
   return new Date(year, month - 1, day + days).toISOString().substr(0, 10)
 }
 
-const shiftMonths = (months: number) => (date: string) => {
+export const shiftMonths = (months: number) => (date: string) => {
   const [year, month, day] = date.split("-").map(n => parseInt(n))
   return new Date(year, month - 1 + months, day).toISOString().substr(0, 10)
 }
 
-const shiftYears = (years: number) => (date: string) => {
+export const shiftYears = (years: number) => (date: string) => {
   const [year, month, day] = date.split("-").map(n => parseInt(n))
   return new Date(year + years, month - 1, day).toISOString().substr(0, 10)
 }

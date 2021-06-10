@@ -1,7 +1,7 @@
 import {EventStream, StreamEvent} from "../event-stream";
 import {
   combinedSavingSchedule,
-  monthlySavingSchedule,
+  monthlySavingSchedule, shiftYears,
   weeklySavingSchedule,
   yearlySavingSchedule
 } from "./saving-schedules";
@@ -92,6 +92,28 @@ const scheduleGenerators = {
   "WEEKLY": weeklySavingSchedule,
   "MONTHLY": monthlySavingSchedule,
   "YEARLY": yearlySavingSchedule,
+}
+
+export function GetSpendingRate(eventStream: EventStream) {
+  return async (date: string): Promise<number> => {
+    const targets = await GetTargets(eventStream)(date)
+    const savingSchedule = combinedSavingSchedule(
+      Object.keys(targets).map(targetName => [
+        scheduleGenerators[targets[targetName].cadence](targetName, targets[targetName].values),
+        targets[targetName].priority
+      ])
+    )
+
+    const stopDate = new LocalDate(shiftYears(1)(date));
+    let expense = 0
+    let next;
+    for(next = savingSchedule.next(); !next.done && new LocalDate(date).isAfter(new LocalDate(next.value.date)); next = savingSchedule.next()){}
+    for(next = savingSchedule.next(); !next.done && !(new LocalDate(next.value.date).isAfter(stopDate)); next = savingSchedule.next()) {
+      expense += next.value.amount
+    }
+
+    return expense / 12
+  }
 }
 
 export function GetRunway(eventStream: EventStream) {

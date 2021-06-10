@@ -11,6 +11,7 @@ import {
   GetRunway,
   GetTransactions,
   TransferFunds,
+  GetSpendingRate,
 } from "@budgie/planning";
 
 const cents = (str: string) => Math.round(parseFloat(str) * 100)
@@ -85,6 +86,9 @@ export function Commands(eventStream: EventStream, out: (...strings: string[]) =
   }
 
   return {
+    rate: () => {
+      GetSpendingRate(eventStream)(today).then(result => out(formatAsDollars(Math.round(result))))
+    },
     account: {
       create: (name: string) => {
         perform(CreateAccount(eventStream)(name))
