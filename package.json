@@ -5,7 +5,7 @@
   "main": "applications/cli/dist/index.js",
   "scripts": {
     "test": "jest",
-    "publish": "yarn workspace @budgie/cli bundle && unzip ./applications/cli/bundle.zip"
+    "publish": "yarn workspace @budgie/cli bundle && rm -rf bundle/ && unzip -q ./applications/cli/bundle.zip"
   },
   "author": "cedarwards",
   "license": "UNLICENSED",

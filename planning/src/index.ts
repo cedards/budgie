@@ -1,6 +1,7 @@
 export {
   EventStream,
-  StreamEvent
+  StreamEvent,
+  InMemoryEventStream
 } from "./event-stream";
 
 export {
