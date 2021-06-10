@@ -78,27 +78,27 @@ describe("CLI", () => {
       Usage: (name)
     `)
 
-    await cli.execute(["account", "create", "checking"])
-    await cli.execute(["account", "create", "savings"])
-    await cli.execute(["credit", "checking", "500", "initial balance", "2020-10-31"])
-    await cli.execute(["credit", "savings", "5500", "another initial balance", "2020-11-01"])
-    await cli.execute(["transfer", "savings", "checking", "500", "2020-11-02"])
-    await cli.execute(["target", "create", "food", "weekly", "2020-11-02", 100, 1])
-    await cli.execute(["target", "create", "supplies", "weekly", "2020-11-02", 50, 1])
+    await cli(["account", "create", "checking"])
+    await cli(["account", "create", "savings"])
+    await cli(["credit", "checking", "500", "initial balance", "2020-10-31"])
+    await cli(["credit", "savings", "5500", "another initial balance", "2020-11-01"])
+    await cli(["transfer", "savings", "checking", "500", "2020-11-02"])
+    await cli(["target", "create", "food", "weekly", "2020-11-02", 100, 1])
+    await cli(["target", "create", "supplies", "weekly", "2020-11-02", 50, 1])
 
-    await cli.execute(["credit", "checking", "200", "payday" /* no date given, should default to today */])
-    await cli.execute(["debit", "checking", "food=12,supplies=8", "supermarket", "2020-11-02"])
-    await cli.execute(["debit", "checking", "food=5", "bodega" /* no date given, should default to today */])
+    await cli(["credit", "checking", "200", "payday" /* no date given, should default to today */])
+    await cli(["debit", "checking", "food=12,supplies=8", "supermarket", "2020-11-02"])
+    await cli(["debit", "checking", "food=5", "bodega" /* no date given, should default to today */])
     terminal.reset()
 
-    await cli.execute(["account", "balances"])
+    await cli(["account", "balances"])
     expectOutput(`
       Current balances:
         checking..1175.00
         savings...5000.00
     `)
 
-    await cli.execute(["account", "transactions", "checking"])
+    await cli(["account", "transactions", "checking"])
     expectOutput(`
       Transactions for checking:
       
@@ -111,14 +111,14 @@ describe("CLI", () => {
       2020-10-31 | 500.00  | 500.00 | initial balance
     `)
 
-    await cli.execute(["budgets"])
+    await cli(["budgets"])
     expectOutput(`
       Current budgets:
         food......83.00
         supplies..42.00
     `)
 
-    await cli.execute(["runway"])
+    await cli(["runway"])
     expectOutputContaining(
       /Current runway:/,
       /food......\d{4}-\d{2}-\d{2}/,

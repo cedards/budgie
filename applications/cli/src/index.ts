@@ -12,6 +12,6 @@ import {EVENT_MIGRATIONS} from "@budgie/planning";
   let args = process.argv.splice(2)
   let commands = Commands(eventStream, console.log)
 
-  await Cli(console.log, commands).execute(args)
+  await Cli(console.log, commands)(args)
 
 })()
