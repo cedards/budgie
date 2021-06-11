@@ -10,40 +10,37 @@ import {
 import {GetBalances, TransactEvent} from "../bookkeeping";
 
 export function CreateMonthlyTarget(eventStream: EventStream) {
-  return async (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => {
+  return async (startDate: string, targetName: string, targetValue: number, priority: number) => {
     await eventStream.append(new CreateTargetEvent(
       startDate,
       targetName,
       targetValue,
       "MONTHLY",
       priority,
-      allocateFrom,
     ))
   }
 }
 
 export function CreateWeeklyTarget(eventStream: EventStream) {
-  return async (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => {
+  return async (startDate: string, targetName: string, targetValue: number, priority: number) => {
     await eventStream.append(new CreateTargetEvent(
       startDate,
       targetName,
       targetValue,
       "WEEKLY",
       priority,
-      allocateFrom,
     ))
   }
 }
 
 export function CreateYearlyTarget(eventStream: EventStream) {
-  return async (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => {
+  return async (startDate: string, targetName: string, targetValue: number, priority: number) => {
     await eventStream.append(new CreateTargetEvent(
       startDate,
       targetName,
       targetValue,
       "YEARLY",
       priority,
-      allocateFrom,
     ))
   }
 }
@@ -216,7 +213,6 @@ class CreateTargetEvent implements StreamEvent {
   targetValue: number
   cadence: "WEEKLY" | "MONTHLY" | "YEARLY"
   priority: number
-  allocateFrom: string
 
   constructor(
     startDate: string,
@@ -224,7 +220,6 @@ class CreateTargetEvent implements StreamEvent {
     targetValue: number,
     cadence: "WEEKLY" | "MONTHLY" | "YEARLY",
     priority: number,
-    allocateFrom: string
   ) {
     this.startDate = startDate
     this.targetName = targetName
@@ -232,7 +227,6 @@ class CreateTargetEvent implements StreamEvent {
     this.cadence = cadence
     this.targetName = targetName
     this.priority = priority
-    this.allocateFrom = allocateFrom
   }
 }
 

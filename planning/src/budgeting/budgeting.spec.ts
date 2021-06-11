@@ -12,8 +12,8 @@ import {CreateAccount, CreditAccount, DebitAccount} from "../bookkeeping";
 
 describe("budgeting", () => {
   let eventStream: EventStream;
-  let createMonthlyTarget: (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => Promise<void>;
-  let createWeeklyTarget: (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => Promise<void>;
+  let createMonthlyTarget: (startDate: string, targetName: string, targetValue: number, priority: number) => Promise<void>;
+  let createWeeklyTarget: (startDate: string, targetName: string, targetValue: number, priority: number) => Promise<void>;
   let getTargets: (date: string) => Promise<{[name: string]: Target}>;
   let getBudgets: (date: string) => Promise<{[name: string]: number}>;
   let getRunway: (date: string) => Promise<{[name: string]: string}>;
@@ -37,7 +37,7 @@ describe("budgeting", () => {
 
   test("grocery budget", async () => {
     await createAccount("Checking")
-    await createWeeklyTarget(startDate, "groceries", 50, 1, "Checking")
+    await createWeeklyTarget(startDate, "groceries", 50, 1)
     const creditAccount = CreditAccount(eventStream)
     const debitAccount = DebitAccount(eventStream)
 
@@ -90,8 +90,8 @@ describe("budgeting", () => {
     await createAccount("Credit Card")
     await debitAccount("Credit Card", 200, startDate)
 
-    await createWeeklyTarget(startDate, "groceries", 100, 2, "Account A")
-    await createMonthlyTarget(startDatePlus(7*3), "rent", 500, 1, "Account A")
+    await createWeeklyTarget(startDate, "groceries", 100, 2)
+    await createMonthlyTarget(startDatePlus(7*3), "rent", 500, 1)
 
     expect(await rentRunwayAsOf(startDate)).toEqual(startDatePlus(7*3))
     expect(await groceryRunwayAsOf(startDate)).toEqual(startDatePlus(7*4))
@@ -114,8 +114,8 @@ describe("budgeting", () => {
     await createAccount("Checking")
     await creditAccount("Checking", 1000, startDate)
 
-    await createMonthlyTarget(startDate, "rent", 800, 1, "Checking")
-    await createMonthlyTarget(startDate, "supplies", 100, 1, "Checking")
+    await createMonthlyTarget(startDate, "rent", 800, 1)
+    await createMonthlyTarget(startDate, "supplies", 100, 1)
 
     await debitAccount("Checking", { rent: 800, supplies: 50 }, startDatePlus(1))
 

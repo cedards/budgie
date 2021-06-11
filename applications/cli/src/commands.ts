@@ -46,9 +46,7 @@ export function Commands(
           presenter.printAsTable<TransactionAndBalance>(`Transactions for ${account}`, entries.reverse(), [
             ["date", record => record.transaction.date],
             ["balance", record => formatAsDollars(record.balance), "right"],
-            ["change", record => formatAsDollars(
-              totalAmount(record.transaction.amount)
-            ), "right"],
+            ["change", record => formatAsDollars(totalAmount(record.transaction.amount)), "right"],
             ["memo", record => record.transaction.memo]
           ])
         })
@@ -63,7 +61,6 @@ export function Commands(
               name,
               cents(amount),
               parseInt(priority || '5'),
-              ""
             ))
           case "monthly":
             return perform(CreateMonthlyTarget(eventStream)(
@@ -71,7 +68,6 @@ export function Commands(
               name,
               cents(amount),
               parseInt(priority || '5'),
-              ""
             ))
           case "yearly":
             return perform(CreateYearlyTarget(eventStream)(
@@ -79,7 +75,6 @@ export function Commands(
               name,
               cents(amount),
               parseInt(priority || '5'),
-              ""
             ))
           default:
             throw new Error(`Unknown target cadence: ${cadence}`)
