@@ -1,4 +1,4 @@
-import {sortBy} from "../language-support";
+import {sortBy} from "@budgie/language-support";
 
 export const shiftDays = (days: number) => (date: string) => {
   const [year, month, day] = date.split("-").map(n => parseInt(n))

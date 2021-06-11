@@ -52,3 +52,21 @@ export function sortBy<T>(...mappers: Array<(originalValue: T) => any>) {
     return newList
   }
 }
+
+export function reduceObject<V, R>(
+  obj: Record<string, V>,
+  fold: (result: R, key: string, value: V) => R,
+  initialValue: R
+) {
+  return Object.keys(obj).reduce((result, key) => fold(result, key, obj[key]), initialValue)
+}
+
+export function mapObject<S, T>(
+  obj: Record<string, S>,
+  map: (key: string, value: S) => T
+) {
+  return reduceObject(obj, ((result, key, value) => ({
+    ...result,
+    [key]: map(key, value)
+  })), {})
+}

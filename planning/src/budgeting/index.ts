@@ -1,12 +1,13 @@
+import {LocalDate} from "@budgie/language-support";
 import {EventStream, StreamEvent} from "../event-stream";
 import {
   combinedSavingSchedule,
-  monthlySavingSchedule, shiftYears,
+  monthlySavingSchedule,
+  shiftYears,
   weeklySavingSchedule,
   yearlySavingSchedule
 } from "./saving-schedules";
 import {GetBalances, TransactEvent} from "../bookkeeping";
-import {LocalDate} from "../language-support";
 
 export function CreateMonthlyTarget(eventStream: EventStream) {
   return async (startDate: string, targetName: string, targetValue: number, priority: number, allocateFrom: string) => {

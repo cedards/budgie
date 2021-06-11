@@ -31,6 +31,10 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         "reference": "workspace:fs-plugin"
       },
       {
+        "name": "@budgie/language-support",
+        "reference": "workspace:language-support"
+      },
+      {
         "name": "@budgie/planning",
         "reference": "workspace:planning"
       }
@@ -40,6 +44,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
     "fallbackExclusionList": [
       ["@budgie/cli", ["workspace:applications/cli"]],
       ["@budgie/fs-plugin", ["workspace:fs-plugin"]],
+      ["@budgie/language-support", ["workspace:language-support"]],
       ["@budgie/planning", ["workspace:planning"]],
       ["budgie", ["workspace:."]]
     ],
@@ -961,11 +966,12 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["@budgie/cli", "workspace:applications/cli"],
             ["@budgie/fs-plugin", "workspace:fs-plugin"],
+            ["@budgie/language-support", "workspace:language-support"],
             ["@budgie/planning", "workspace:planning"],
             ["@types/jest", "npm:26.0.22"],
             ["@types/node", "npm:15.12.1"],
             ["jest", "npm:26.6.3"],
-            ["ts-jest", "virtual:ac5b93d73190211be936270e1ecbacbf6389f524a41778159cac73d9f87861dc9458b19f5f83893e064d598f7171042c46dbc393619df5f5b34b881d8e55c46a#npm:26.5.5"],
+            ["ts-jest", "virtual:649ddcd4f200e090f9bcac5f58daa5a18ae0112fb4a3ab31c48075eba2f00185330110877fafc93cac7acbe335a3481458ceef21d568c306420a08fda3b0f675#npm:26.5.5"],
             ["ts-node", "virtual:09cd9f09d4b51a8afab37c938b6e78fe5acb06d58b0e2936f289ea39b30762562e6f1f13f0d256b6d9450a515b9938ca85f222424e27817b03fa903017f68850#npm:10.0.0"],
             ["typescript", "patch:typescript@npm%3A4.2.4#builtin<compat/typescript>::version=4.2.4&hash=ddfc1b"]
           ],
@@ -989,14 +995,28 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "SOFT",
         }]
       ]],
+      ["@budgie/language-support", [
+        ["workspace:language-support", {
+          "packageLocation": "./language-support/",
+          "packageDependencies": [
+            ["@budgie/language-support", "workspace:language-support"],
+            ["@types/jest", "npm:26.0.22"],
+            ["jest", "npm:26.6.3"],
+            ["ts-jest", "virtual:649ddcd4f200e090f9bcac5f58daa5a18ae0112fb4a3ab31c48075eba2f00185330110877fafc93cac7acbe335a3481458ceef21d568c306420a08fda3b0f675#npm:26.5.5"],
+            ["typescript", "patch:typescript@npm%3A4.2.4#builtin<compat/typescript>::version=4.2.4&hash=ddfc1b"]
+          ],
+          "linkType": "SOFT",
+        }]
+      ]],
       ["@budgie/planning", [
         ["workspace:planning", {
           "packageLocation": "./planning/",
           "packageDependencies": [
             ["@budgie/planning", "workspace:planning"],
+            ["@budgie/language-support", "workspace:language-support"],
             ["@types/jest", "npm:26.0.22"],
             ["jest", "npm:26.6.3"],
-            ["ts-jest", "virtual:ac5b93d73190211be936270e1ecbacbf6389f524a41778159cac73d9f87861dc9458b19f5f83893e064d598f7171042c46dbc393619df5f5b34b881d8e55c46a#npm:26.5.5"],
+            ["ts-jest", "virtual:649ddcd4f200e090f9bcac5f58daa5a18ae0112fb4a3ab31c48075eba2f00185330110877fafc93cac7acbe335a3481458ceef21d568c306420a08fda3b0f675#npm:26.5.5"],
             ["typescript", "patch:typescript@npm%3A4.2.4#builtin<compat/typescript>::version=4.2.4&hash=ddfc1b"]
           ],
           "linkType": "SOFT",
@@ -7416,10 +7436,10 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           ],
           "linkType": "HARD",
         }],
-        ["virtual:ac5b93d73190211be936270e1ecbacbf6389f524a41778159cac73d9f87861dc9458b19f5f83893e064d598f7171042c46dbc393619df5f5b34b881d8e55c46a#npm:26.5.5", {
-          "packageLocation": "./.yarn/$$virtual/ts-jest-virtual-66cfe208fb/0/cache/ts-jest-npm-26.5.5-1f49fc208f-a7fe56357b.zip/node_modules/ts-jest/",
+        ["virtual:649ddcd4f200e090f9bcac5f58daa5a18ae0112fb4a3ab31c48075eba2f00185330110877fafc93cac7acbe335a3481458ceef21d568c306420a08fda3b0f675#npm:26.5.5", {
+          "packageLocation": "./.yarn/$$virtual/ts-jest-virtual-fca8b6b5d8/0/cache/ts-jest-npm-26.5.5-1f49fc208f-a7fe56357b.zip/node_modules/ts-jest/",
           "packageDependencies": [
-            ["ts-jest", "virtual:ac5b93d73190211be936270e1ecbacbf6389f524a41778159cac73d9f87861dc9458b19f5f83893e064d598f7171042c46dbc393619df5f5b34b881d8e55c46a#npm:26.5.5"],
+            ["ts-jest", "virtual:649ddcd4f200e090f9bcac5f58daa5a18ae0112fb4a3ab31c48075eba2f00185330110877fafc93cac7acbe335a3481458ceef21d568c306420a08fda3b0f675#npm:26.5.5"],
             ["@types/jest", "npm:26.0.22"],
             ["@types/typescript", null],
             ["bs-logger", "npm:0.2.6"],

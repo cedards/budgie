@@ -1,8 +1,8 @@
 {
   "private": true,
-  "name": "@budgie/planning",
+  "name": "@budgie/language-support",
   "version": "1.0.0",
-  "description": "",
+  "description": "things i wish were built into javascript",
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
@@ -10,9 +10,6 @@
   },
   "author": "cedarwards",
   "license": "UNLICENSED",
-  "dependencies": {
-    "@budgie/language-support": "1.0.0"
-  },
   "devDependencies": {
     "@types/jest": "^26.0.22",
     "jest": "^26.6.3",

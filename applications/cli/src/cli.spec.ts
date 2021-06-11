@@ -1,5 +1,6 @@
 import {InMemoryEventStream} from "@budgie/planning";
-import {Cli, Commands} from "./cli";
+import {Cli} from "./cli";
+import {Commands} from "./commands";
 
 function FakeTerminal() {
   let output = ""
@@ -104,11 +105,11 @@ describe("CLI", () => {
       
       date       | balance | change | memo                 
       -----------|---------|--------|----------------------
-      2020-11-05 | 1175.00 | \x1b[91m-5.00\x1b[39m  | bodega               
+      2020-11-05 | 1175.00 |  \x1b[91m-5.00\x1b[39m | bodega               
       2020-11-05 | 1180.00 | 200.00 | payday               
-      2020-11-02 | 980.00  | \x1b[91m-20.00\x1b[39m | supermarket          
+      2020-11-02 |  980.00 | \x1b[91m-20.00\x1b[39m | supermarket          
       2020-11-02 | 1000.00 | 500.00 | transfer from savings
-      2020-10-31 | 500.00  | 500.00 | initial balance
+      2020-10-31 |  500.00 | 500.00 | initial balance
     `)
 
     await cli(["budgets"])

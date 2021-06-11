@@ -1,8 +1,9 @@
-import {Cli, Commands} from "./cli";
+import {Cli} from "./cli";
 import {FsEventStream} from "@budgie/fs-plugin";
 import * as path from "path";
 import * as os from "os";
 import {EVENT_MIGRATIONS} from "@budgie/planning";
+import {Commands} from "./commands";
 
 (async function() {
   const eventStream = await FsEventStream(

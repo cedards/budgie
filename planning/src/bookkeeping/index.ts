@@ -1,5 +1,5 @@
 import {EventStream, StreamEvent} from "../event-stream";
-import {sortBy} from "../language-support";
+import {reduceObject, sortBy, mapObject} from "@budgie/language-support";
 
 class CreateAccountEvent implements StreamEvent {
   public static type = "CREATE_ACCOUNT"
@@ -106,7 +106,7 @@ export function CreditAccount(eventStream: EventStream) {
   return async (accountName: string, amount: number | Itemization, date: string, memo?: string) => {
     const itemizedAmounts = (typeof amount === "number")
       ? { ["_" as string] : amount }
-      : Object.keys(amount).reduce((result, nextKey) => ({...result, [nextKey]: amount[nextKey]}), {})
+      : amount
     await eventStream.append(new TransactEvent(accountName, date, itemizedAmounts, memo))
   }
 }
@@ -115,7 +115,7 @@ export function DebitAccount(eventStream: EventStream) {
   return async (accountName: string, amount: number | Itemization, date: string, memo?: string) => {
     const itemizedAmounts = (typeof amount === "number")
       ? { ["_" as string] : -amount }
-      : Object.keys(amount).reduce((result, nextKey) => ({...result, [nextKey]: -amount[nextKey]}), {})
+      : mapObject(amount, (_, subamount) => -subamount)
     await eventStream.append(new TransactEvent(accountName, date, itemizedAmounts, memo))
   }
 }
@@ -136,7 +136,11 @@ export function GetBalances(eventStream: EventStream) {
 
       if (TransactEvent.is(event)) return {
         ...result,
-        [event.accountName]: result[event.accountName] + Object.keys(event.itemizedAmounts).reduce((sum, key) => sum + event.itemizedAmounts[key], 0),
+        [event.accountName]: result[event.accountName] + reduceObject(
+          event.itemizedAmounts,
+          (sum, _, subamount) => sum + subamount,
+          0
+        ),
       }
 
       if (TransferEvent.is(event)) return {
@@ -150,9 +154,16 @@ export function GetBalances(eventStream: EventStream) {
   }
 }
 
+export type TransactionEntry = {
+  date: string,
+  amount: { [target: string]: number },
+  memo: string
+}
+
 export function GetTransactions(eventStream: EventStream) {
+
   return async (account) => {
-    return eventStream.project((result, event) => {
+    return eventStream.project<TransactionEntry[]>((result, event) => {
       if (TransactEvent.is(event) && event.accountName === account) return result.concat({
         date: event.date,
         amount: event.itemizedAmounts,
@@ -177,13 +188,17 @@ export function GetTransactions(eventStream: EventStream) {
 
       return result
     }, []).then(unsortedTransactions => {
-      return sortBy((transaction: { date: string, amount: { [target: string]: number }, memo: string }) => transaction.date)(unsortedTransactions)
+      return sortBy((transaction: TransactionEntry) => transaction.date)(unsortedTransactions)
         .reduce((sortedEntriesWithBalances, transaction) => {
+          const previousBalance = sortedEntriesWithBalances.length > 0
+            ? sortedEntriesWithBalances[sortedEntriesWithBalances.length-1].balance
+            : 0
+
           return sortedEntriesWithBalances.concat({
             transaction: transaction,
-            balance: Object.keys(transaction.amount).reduce((total, target) => {
-              return total + transaction.amount[target]
-            }, (sortedEntriesWithBalances[sortedEntriesWithBalances.length-1] || { balance: 0 }).balance)
+            balance: reduceObject(transaction.amount, (total, _, amount) => {
+              return total + amount
+            }, previousBalance)
           })
         }, [])
     })

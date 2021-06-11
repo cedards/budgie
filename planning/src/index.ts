@@ -11,6 +11,7 @@ export {
   GetBalances,
   TransferFunds,
   GetTransactions,
+  TransactionEntry,
   EVENT_MIGRATIONS
 } from "./bookkeeping"
 

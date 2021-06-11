@@ -13,6 +13,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@budgie/fs-plugin": "1.0.0",
+    "@budgie/language-support": "1.0.0",
     "@budgie/planning": "workspace:planning"
   },
   "devDependencies": {
