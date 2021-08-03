@@ -1,8 +1,8 @@
-import {LocalDate} from "@budgie/language-support";
+import {LocalDate, reduceObject} from "@budgie/language-support";
 import {EventStream, StreamEvent} from "../event-stream";
 import {
   combinedSavingSchedule,
-  monthlySavingSchedule,
+  monthlySavingSchedule, shiftDays, shiftMonths,
   shiftYears,
   weeklySavingSchedule,
   yearlySavingSchedule
@@ -157,6 +157,33 @@ export function GetRunway(eventStream: EventStream) {
     }
 
     return runway
+  }
+}
+
+const numberOfWeeksBetween = (from: string, to: string) => {
+  return (new Date(to).getTime() - new Date(from).getTime()) / (7 * 24 * 60 * 60 * 1000)
+}
+
+export function GetRunwayTrend(eventStream: EventStream) {
+  async function runwayWeeksAsOf(dateOfInterest: string): Promise<number> {
+    const runway = await GetRunway(eventStream)(dateOfInterest)
+    const earliestDate = reduceObject(runway, (earliest: string, _: string, date: string) => {
+      return earliest < date ? earliest : date
+    }, "9999-12-31")
+
+    return numberOfWeeksBetween(dateOfInterest, earliestDate)
+  }
+
+  return async (from: string, to: string): Promise<{ [date: string]: number }> => {
+    const trend = {}
+    let dateOfInterest = from
+
+    while(dateOfInterest <= to) {
+      trend[dateOfInterest] = Math.round(await runwayWeeksAsOf(dateOfInterest))
+      dateOfInterest = shiftMonths(1)(dateOfInterest)
+    }
+
+    return trend
   }
 }
 

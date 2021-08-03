@@ -5,6 +5,7 @@ import {
   GetBudgets,
   GetExpendituresByTarget,
   GetRunway,
+  GetRunwayTrend,
   GetTargets,
   Target
 } from "./index";
@@ -17,6 +18,7 @@ describe("budgeting", () => {
   let getTargets: (date: string) => Promise<{[name: string]: Target}>;
   let getBudgets: (date: string) => Promise<{[name: string]: number}>;
   let getRunway: (date: string) => Promise<{[name: string]: string}>;
+  let getRunwayTrend: (from: string, to: string) => Promise<{[date: string]: number}>;
   let createAccount: (name: string) => Promise<void>;
   const startDate = "2020-11-01" // This month started on a Sunday, which makes it a simple example since weekly targets trigger on Sunday
   const startDatePlus = (days: number) => {
@@ -32,6 +34,7 @@ describe("budgeting", () => {
     getTargets = GetTargets(eventStream)
     getBudgets = GetBudgets(eventStream)
     getRunway = GetRunway(eventStream)
+    getRunwayTrend = GetRunwayTrend(eventStream)
     createAccount = CreateAccount(eventStream)
   })
 
@@ -125,5 +128,25 @@ describe("budgeting", () => {
     expect(expenditures["supplies"]).toEqual(50)
     expect((await getBudgets(startDatePlus(1)))["supplies"]).toEqual(50)
     expect((await getBudgets(startDatePlus(1)))["rent"]).toEqual(0)
+  })
+
+  test("Monitoring long-term trends", async () => {
+    const creditAccount = CreditAccount(eventStream)
+    const debitAccount = DebitAccount(eventStream)
+
+    await createAccount("Checking")
+    await creditAccount("Checking", 10000, startDate)
+
+    await createMonthlyTarget(startDate, "rent", 800, 2)
+    await createMonthlyTarget(startDate, "food", 200, 1)
+
+    await creditAccount("Checking", 1000, startDatePlus(30))
+    await creditAccount("Checking", 1, startDatePlus(60))
+
+    const trend = await getRunwayTrend(startDate, startDatePlus(61))
+
+    expect(trend[startDate]).toEqual(39)
+    expect(trend[startDatePlus(30)]).toEqual(39) // Income covered expenses, so runway stays the same
+    expect(trend[startDatePlus(61)]).toEqual(35) // Income didn't cover expenses, so savings runway is used up
   })
 })
