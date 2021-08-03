@@ -119,11 +119,17 @@ describe("CLI", () => {
         supplies..42.00
     `)
 
-    await cli(["runway"])
+    await cli(["runway", "current"])
     expectOutputContaining(
       /Current runway:/,
       /food......\d{4}-\d{2}-\d{2}/,
       /supplies..\d{4}-\d{2}-\d{2}/,
     )
+
+    await cli(["runway", "trend"])
+    expectOutput(`
+      Runway over time (in weeks):
+        2020-10-31..2
+    `)
   })
 })

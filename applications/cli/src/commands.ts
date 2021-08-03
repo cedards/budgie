@@ -18,6 +18,7 @@ import {reduceObject} from "@budgie/language-support";
 import {Presenter} from "./presenter";
 import {cents, formatAsDollars, parseAmount} from "./string-processing";
 import {CommandOrSubcommands} from "./cli";
+import {GetRunwayTrend} from "../../../planning/dist/budgeting";
 
 export function Commands(
   eventStream: EventStream,
@@ -95,10 +96,27 @@ export function Commands(
         presenter.printAsLedger("Current budgets", budgets, formatAsDollars)
       })
     },
-    runway: () => {
-      return GetRunway(eventStream)(today).then((runway: { string: string }) => {
-        presenter.printAsLedger("Current runway", runway)
-      })
+    runway: {
+      current: () => {
+        return GetRunway(eventStream)(today).then((runway: { string: string }) => {
+          presenter.printAsLedger("Current runway", runway)
+        })
+      },
+
+      trend: () => {
+        return eventStream
+          .project((result: string | null, event) => {
+            if(event.type === "TRANSACT") {
+              if(result === null) return event["date"]
+              return event["date"] < result ? event["date"] : result
+            }
+            return result
+          }, null)
+          .then(start => GetRunwayTrend(eventStream)(start, today))
+          .then((runway: { string: number }) => {
+            presenter.printAsLedger("Runway over time (in weeks)", runway)
+          })
+      }
     }
   }
 }

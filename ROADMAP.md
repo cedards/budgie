@@ -2,8 +2,6 @@
 
 ## Incomplete
 
-- I can see changes in funded runway over time (as # weeks, not date)
-
 - I can see funded runway as a single date rather than listed for each target
 
 - I can find out my average monthly expense rate over a given period
@@ -17,6 +15,8 @@
 - I can find out projected expenses for a given month
 
 ## Complete
+
+- I can see changes in funded runway over time (as # weeks, not date)
 
 - I can find out how far in advance I have "funded" my budget
 
