@@ -4,6 +4,8 @@
 
 - I can find out my average monthly expense rate over a given period
 
+- I can see the allocation rate for my savings targets
+
 - Budgie can ingest my bank or credit card statement for faster data entry
   
 - I can quickly enter common expenses
