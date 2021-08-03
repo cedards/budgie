@@ -2,8 +2,6 @@
 
 ## Incomplete
 
-- I can see funded runway as a single date rather than listed for each target
-
 - I can find out my average monthly expense rate over a given period
 
 - Budgie can ingest my bank or credit card statement for faster data entry
@@ -15,6 +13,8 @@
 - I can find out projected expenses for a given month
 
 ## Complete
+
+- I can see funded runway as a single date rather than listed for each target
 
 - I can see changes in funded runway over time (as # weeks, not date)
 

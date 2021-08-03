@@ -99,7 +99,9 @@ export function Commands(
     runway: {
       current: () => {
         return GetRunway(eventStream)(today).then((runway: { string: string }) => {
-          presenter.printAsLedger("Current runway", runway)
+          const earliestDate = reduceObject(runway, (result: string, _, value) => value < result ? value : result, "9999-12-31")
+          const weeks = Math.round((new Date(earliestDate).getTime() - new Date(today).getTime()) / (7 * 24 * 60 * 60 * 1000))
+          presenter.printAsLedger(`Current runway (${weeks} weeks)`, runway)
         })
       },
 
