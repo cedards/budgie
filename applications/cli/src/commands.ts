@@ -36,7 +36,7 @@ export function Commands(
         return perform(CreateAccount(eventStream)(name))
       },
       balances: () => {
-        return GetBalances(eventStream)().then((balances: { string: number }) => {
+        return GetBalances(eventStream)(today).then((balances: { string: number }) => {
           presenter.printAsLedger("Current balances", balances, formatAsDollars)
         })
       },

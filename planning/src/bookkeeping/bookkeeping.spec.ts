@@ -21,23 +21,29 @@ test("bookkeeping", async () => {
 
   await creditAccount("Account A", 1000, startDate)
   await debitAccount("Account B", 300, startDatePlus(1))
+  await transferFunds("Account A", "Account B", 400, startDatePlus(2))
+  // Itemized transactions are summed up when applied to balances:
+  await debitAccount("Account A", { targetA: 100, targetB: 25, _: 50 }, startDatePlus(3), "some note")
 
-  expect(await getBalances()).toEqual({
+  expect(await getBalances(startDate)).toEqual({
+    "Account A": 1000,
+    "Account B": 0,
+  })
+
+  // After debit:
+  expect(await getBalances(startDatePlus(1))).toEqual({
     "Account A": 1000,
     "Account B": -300,
   })
 
-  await transferFunds("Account A", "Account B", 400, startDatePlus(2))
-
-  expect(await getBalances()).toEqual({
+  // After transfer:
+  expect(await getBalances(startDatePlus(2))).toEqual({
     "Account A": 600,
     "Account B": 100,
   })
 
-  // Itemized transactions are summed up when applied to balances:
-  await debitAccount("Account A", { targetA: 100, targetB: 25, _: 50 }, startDatePlus(3), "some note")
-
-  expect(await getBalances()).toEqual({
+  // After itemized debit:
+  expect(await getBalances(startDatePlus(3))).toEqual({
     "Account A": 425,
     "Account B": 100,
   })

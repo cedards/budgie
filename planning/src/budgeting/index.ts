@@ -117,7 +117,7 @@ export function GetSpendingRate(eventStream: EventStream) {
 export function GetRunway(eventStream: EventStream) {
   return async (date: string): Promise<{ [targetName: string]: string }> => {
     const targets = await GetTargets(eventStream)(date)
-    const balances = await GetBalances(eventStream)()
+    const balances = await GetBalances(eventStream)(date)
     const totalBalance = Object.keys(balances).reduce((total, account) => total + balances[account], 0)
     const expendituresByTarget = await GetExpendituresByTarget(eventStream)(date)
     const currentBudgets = await GetBudgets(eventStream)(date)

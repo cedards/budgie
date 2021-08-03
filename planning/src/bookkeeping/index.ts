@@ -127,14 +127,14 @@ export function TransferFunds(eventStream: EventStream) {
 }
 
 export function GetBalances(eventStream: EventStream) {
-  return async () => {
+  return async (date: string) => {
     return eventStream.project((result, event) => {
       if (CreateAccountEvent.is(event)) return {
         ...result,
         [event.accountName]: 0,
       }
 
-      if (TransactEvent.is(event)) return {
+      if (TransactEvent.is(event) && event.date <= date) return {
         ...result,
         [event.accountName]: result[event.accountName] + reduceObject(
           event.itemizedAmounts,
@@ -143,7 +143,7 @@ export function GetBalances(eventStream: EventStream) {
         ),
       }
 
-      if (TransferEvent.is(event)) return {
+      if (TransferEvent.is(event) && event.date <= date) return {
         ...result,
         [event.sourceAccount]: result[event.sourceAccount] - event.value,
         [event.destinationAccount]: result[event.destinationAccount] + event.value,
