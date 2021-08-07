@@ -1,8 +1,9 @@
-import {LocalDate, reduceObject} from "@budgie/language-support";
+import {LocalDate, mapObject, reduceObject} from "@budgie/language-support";
 import {EventStream, StreamEvent} from "../event-stream";
 import {
   combinedSavingSchedule,
-  monthlySavingSchedule, shiftDays, shiftMonths,
+  monthlySavingSchedule,
+  shiftMonths,
   shiftYears,
   weeklySavingSchedule,
   yearlySavingSchedule
@@ -187,41 +188,68 @@ export function GetRunwayTrend(eventStream: EventStream) {
   }
 }
 
+interface TargetWithAccruedBudget extends Target {
+  accruedBudget: number
+}
+
+function scheduleUtility(schedule: Generator<{ date: string; amount: number; target: string }, { date: string; amount: number; target: string }, unknown>) {
+  function forEachEventUntil(date: string, work: (trigger: (IteratorYieldResult<{ date: string; amount: number; target: string }> | IteratorReturnResult<{ date: string; amount: number; target: string }>)) => void) {
+    for (let trigger = schedule.next(); !trigger.done && trigger.value.date <= date; trigger = schedule.next()) {
+      work(trigger);
+    }
+  }
+
+  function reduceEventsUntil<T>(
+    date: string,
+    work: (resultSoFar: T, trigger: (IteratorYieldResult<{ date: string; amount: number; target: string }> | IteratorReturnResult<{ date: string; amount: number; target: string }>)) => T,
+    initialValue: T
+  ): T {
+    let result = initialValue
+    forEachEventUntil(date, trigger => result = work(result, trigger))
+    return result
+  }
+
+  return {
+    forEachEventUntil,
+    reduceEventsUntil
+  }
+}
+
 export function GetBudgets(eventStream: EventStream) {
-  return async (date: string): Promise<{ [targetName: string]: number }> => {
-    const localDate = new LocalDate(date)
-    return eventStream.project((result, event) => {
-      if (CreateTargetEvent.is(event)) {
-        const schedule = scheduleGenerators[event.cadence](event.targetName, [[event.startDate, event.targetValue]])
-
-        let accruedBudget = 0
-        for (let trigger = schedule.next(); !trigger.done && !(new LocalDate(trigger.value.date)).isAfter(localDate); trigger = schedule.next()) {
-          accruedBudget += trigger.value.amount
-        }
+  return async (asOfDate: string): Promise<{ [targetName: string]: number }> => {
+    const targetsWithAccruedBudgets: {[name: string]: TargetWithAccruedBudget} =
+      mapObject(await GetTargets(eventStream)(asOfDate), (targetName, target) => {
+        const schedule = scheduleUtility(scheduleGenerators[target.cadence](targetName, target.values))
 
         return {
-          ...result,
-          [event.targetName]: accruedBudget
+          ...target,
+          accruedBudget: schedule.reduceEventsUntil(
+            asOfDate,
+            (accruedBudget, trigger) => accruedBudget + trigger.value.amount,
+            0
+          )
         }
-      }
+      })
 
+    const targetsWithNetBudgets = await eventStream.project((result, event) => {
       if (TransactEvent.is(event)) {
-        const newItemizedTotals = Object.keys(event.itemizedAmounts).reduce((totals, nextKey) => {
-          if(nextKey === "_") return totals
-          return {
-            ...totals,
-            [nextKey]: (result[nextKey] || 0) + event.itemizedAmounts[nextKey]
-          }
-        }, {})
+        return reduceObject(event.itemizedAmounts, (updatedTargets, targetName, amountForTarget) => {
+          if(targetName === "_" || !updatedTargets[targetName]) return updatedTargets
 
-        return {
-          ...result,
-          ...newItemizedTotals
-        }
+          return {
+            ...updatedTargets,
+            [targetName]: {
+              ...updatedTargets[targetName],
+              accruedBudget: updatedTargets[targetName].accruedBudget + amountForTarget
+            }
+          }
+        }, result)
       }
 
       return result
-    }, {})
+    }, targetsWithAccruedBudgets)
+
+    return mapObject(targetsWithNetBudgets, (_, target) => target.accruedBudget)
   }
 }
 

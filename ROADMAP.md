@@ -2,6 +2,8 @@
 
 ## Incomplete
 
+- I can see the accrual rate for saving targets
+
 - I can find out my average monthly expense rate over a given period
 
 - I can see the allocation rate for my savings targets
