@@ -1,4 +1,10 @@
-import {mapObject, reduceObject, sortBy} from "./index";
+import {
+  mapObject,
+  reduceObject,
+  sortBy,
+  filterObject,
+  mergeObjects
+} from "./index";
 
 describe("language support", () => {
   type Person = {
@@ -67,6 +73,49 @@ describe("language support", () => {
       a: -1,
       b: -2,
       c: 3
+    })
+  })
+
+  test("filterObject", () => {
+    const obj = {
+      a: 1,
+      b: 2,
+      c: 3,
+      d: 4,
+      x: 6
+    }
+
+    expect(filterObject(obj, (key, value) =>
+      key === 'x' || value % 2 !== 0
+    )).toEqual({
+      a: 1,
+      c: 3,
+      x: 6
+    })
+  })
+
+  test("mergeObjects", () => {
+    const objA = {
+      a: 1,
+      b: 2,
+      c: 3
+    }
+
+    const objB = {
+      a: 4,
+      b: 6,
+      d: 7
+    }
+
+    expect(mergeObjects(objA, objB, (valueA, valueB, key) => {
+      if(valueA === undefined) return `${key} (only in objB) ${valueB}`
+      if(valueB === undefined) return `${key} (only in objA) ${valueA}`
+      return `${key} ${valueA + valueB}`
+    })).toEqual({
+      a: "a 5",
+      b: "b 8",
+      c: "c (only in objA) 3",
+      d: "d (only in objB) 7"
     })
   })
 })

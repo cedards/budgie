@@ -57,16 +57,54 @@ export function reduceObject<V, R>(
   obj: Record<string, V>,
   fold: (result: R, key: string, value: V) => R,
   initialValue: R
-) {
-  return Object.keys(obj).reduce((result, key) => fold(result, key, obj[key]), initialValue)
+): R {
+  let result = initialValue
+  Object.keys(obj).forEach(key => {
+    result = fold(result, key, obj[key])
+  })
+  return result
 }
 
 export function mapObject<S, T>(
   obj: Record<string, S>,
   map: (key: string, value: S) => T
 ) {
-  return reduceObject(obj, ((result, key, value) => ({
-    ...result,
-    [key]: map(key, value)
-  })), {})
+  return reduceObject(
+    obj,
+    (result, key, value) => ({...result, [key]: map(key, value)}),
+    {}
+  )
+}
+
+export function filterObject<T>(
+  obj: {[key: string]: T},
+  check: (key: string, value: T) => boolean
+): {[key: string]: T} {
+  return reduceObject(
+    obj,
+    (result, key, value) => check(key, value)
+      ? {...result, [key]: value}
+      : result,
+    {}
+  );
+}
+
+export function mergeObjects<A,B,R>(
+  objA: {[key: string]: A},
+  objB: {[key: string]: B},
+  merge: (a: A | undefined, b: B | undefined, key: string) => R
+): {[key: string]: R} {
+  const objAOnlyRegion = mapObject(
+    filterObject(objA, key => objB[key] === undefined),
+    (key, value) => merge(value, undefined, key)
+  )
+  const objBRegion = mapObject(
+    objB,
+    (key, value) => merge(objA[key], value, key)
+  )
+
+  return {
+    ...objAOnlyRegion,
+    ...objBRegion,
+  }
 }
