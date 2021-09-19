@@ -119,6 +119,16 @@ describe("CLI", () => {
         supplies..42.00
     `)
 
+    await cli(["target", "list"])
+    expectOutput(`
+      Savings targets:
+      
+      target   | rate      | balance
+      ---------|-----------|--------
+      food     | 100.00/wk | 83.00  
+      supplies | 50.00/wk  | 42.00  
+    `)
+
     await cli(["runway", "current"])
     expectOutputContaining(
       /Current runway \(\d+ weeks\):/,

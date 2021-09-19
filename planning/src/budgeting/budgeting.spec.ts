@@ -7,7 +7,7 @@ import {
   GetRunway,
   GetRunwayTrend,
   GetTargets,
-  Target
+  Target, TargetWithAccruedBudget
 } from "./index";
 import {CreateAccount, CreditAccount, DebitAccount} from "../bookkeeping";
 
@@ -16,7 +16,7 @@ describe("budgeting", () => {
   let createMonthlyTarget: (startDate: string, targetName: string, targetValue: number, priority: number) => Promise<void>;
   let createWeeklyTarget: (startDate: string, targetName: string, targetValue: number, priority: number) => Promise<void>;
   let getTargets: (date: string) => Promise<{[name: string]: Target}>;
-  let getBudgets: (date: string) => Promise<{[name: string]: number}>;
+  let getBudgets: (date: string) => Promise<{[name: string]: TargetWithAccruedBudget}>;
   let getRunway: (date: string) => Promise<{[name: string]: string}>;
   let getRunwayTrend: (from: string, to: string) => Promise<{[date: string]: number}>;
   let createAccount: (name: string) => Promise<void>;
@@ -46,7 +46,7 @@ describe("budgeting", () => {
 
     const availableGroceryMoneyOn = async (date: string) => {
       const budgets = await getBudgets(date)
-      return budgets["groceries"]
+      return budgets["groceries"].accruedBudget
     }
 
     await(creditAccount("Checking", 1000, startDate))
@@ -126,13 +126,12 @@ describe("budgeting", () => {
 
     expect(expenditures["rent"]).toEqual(800)
     expect(expenditures["supplies"]).toEqual(50)
-    expect((await getBudgets(startDatePlus(1)))["supplies"]).toEqual(50)
-    expect((await getBudgets(startDatePlus(1)))["rent"]).toEqual(0)
+    expect((await getBudgets(startDatePlus(1)))["supplies"].accruedBudget).toEqual(50)
+    expect((await getBudgets(startDatePlus(1)))["rent"].accruedBudget).toEqual(0)
   })
 
   test("Monitoring long-term trends", async () => {
     const creditAccount = CreditAccount(eventStream)
-    const debitAccount = DebitAccount(eventStream)
 
     await createAccount("Checking")
     await creditAccount("Checking", 10000, startDate)

@@ -124,7 +124,7 @@ export function GetRunway(eventStream: EventStream) {
     const currentBudgets = await GetBudgets(eventStream)(date)
     const overspend = Object.keys(currentBudgets).reduce((result, target) => ({
       ...result,
-      [target]: currentBudgets[target] < 0 ? -currentBudgets[target] : 0
+      [target]: currentBudgets[target].accruedBudget < 0 ? -currentBudgets[target].accruedBudget : 0
     }), {})
 
     const savingSchedule = combinedSavingSchedule(
@@ -188,7 +188,7 @@ export function GetRunwayTrend(eventStream: EventStream) {
   }
 }
 
-interface TargetWithAccruedBudget extends Target {
+export interface TargetWithAccruedBudget extends Target {
   accruedBudget: number
 }
 
@@ -220,7 +220,7 @@ function scheduleFor(targetName: string, target: Target) {
 }
 
 export function GetBudgets(eventStream: EventStream) {
-  return async (asOfDate: string): Promise<{ [targetName: string]: number }> => {
+  return async (asOfDate: string): Promise<{ [targetName: string]: TargetWithAccruedBudget }> => {
     const targetsWithAccruedBudgets: {[name: string]: TargetWithAccruedBudget} =
       mapObject(
         await GetTargets(eventStream)(asOfDate),
@@ -255,7 +255,7 @@ export function GetBudgets(eventStream: EventStream) {
       )
     }, targetsWithAccruedBudgets)
 
-    return mapObject(targetsWithNetBudgets, (_, target) => target.accruedBudget)
+    return targetsWithNetBudgets
   }
 }
 

@@ -14,11 +14,11 @@ import {
   TransferFunds,
   TransactionEntry
 } from "@budgie/planning";
-import {reduceObject} from "@budgie/language-support";
+import {mapObject, reduceObject} from "@budgie/language-support";
 import {Presenter} from "./presenter";
 import {cents, formatAsDollars, parseAmount} from "./string-processing";
 import {CommandOrSubcommands} from "./cli";
-import {GetRunwayTrend} from "../../../planning/dist/budgeting";
+import {GetRunwayTrend, TargetWithAccruedBudget} from "../../../planning/dist/budgeting";
 
 export function Commands(
   eventStream: EventStream,
@@ -80,7 +80,27 @@ export function Commands(
           default:
             throw new Error(`Unknown target cadence: ${cadence}`)
         }
-      }
+      },
+      list: () => {
+        return GetBudgets(eventStream)(today).then((budgets: { string: TargetWithAccruedBudget }) => {
+          const cadenceStrings = {
+            "WEEKLY": "wk",
+            "MONTHLY": "mo",
+            "YEARLY": "yr"
+          }
+          const entries = Object.keys(budgets).map(targetName => ({
+            rate: `${formatAsDollars(budgets[targetName].values[budgets[targetName].values.length-1][1])}/${cadenceStrings[budgets[targetName].cadence]}`,
+            balance: formatAsDollars(budgets[targetName].accruedBudget),
+            name: targetName
+          }))
+
+          return presenter.printAsTable("Savings targets", entries, [
+            ["target", entry => entry.name],
+            ["rate", entry => entry.rate],
+            ["balance", entry => entry.balance]
+          ])
+        })
+      },
     },
     credit: (account: string, amount: string, memo: string, date: string) => {
       return perform(CreditAccount(eventStream)(account, parseAmount(amount), date || today, memo))
@@ -92,8 +112,12 @@ export function Commands(
       return perform(TransferFunds(eventStream)(from, to, cents(amount), date || today))
     },
     budgets: () => {
-      return GetBudgets(eventStream)(today).then((budgets: { string: number }) => {
-        presenter.printAsLedger("Current budgets", budgets, formatAsDollars)
+      return GetBudgets(eventStream)(today).then((budgets: { string: TargetWithAccruedBudget }) => {
+        presenter.printAsLedger(
+          "Current budgets",
+          budgets,
+          value => formatAsDollars(value.accruedBudget)
+        )
       })
     },
     runway: {
