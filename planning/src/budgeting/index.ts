@@ -1,4 +1,4 @@
-import {LocalDate, mapObject, reduceObject} from "@budgie/language-support";
+import {filterObject, LocalDate, mapObject, reduceObject} from "@budgie/language-support";
 import {EventStream, StreamEvent} from "../event-stream";
 import {
   combinedSavingSchedule,
@@ -215,38 +215,44 @@ function scheduleUtility(schedule: Generator<{ date: string; amount: number; tar
   }
 }
 
+function scheduleFor(targetName: string, target: Target) {
+  return scheduleUtility(scheduleGenerators[target.cadence](targetName, target.values));
+}
+
 export function GetBudgets(eventStream: EventStream) {
   return async (asOfDate: string): Promise<{ [targetName: string]: number }> => {
     const targetsWithAccruedBudgets: {[name: string]: TargetWithAccruedBudget} =
-      mapObject(await GetTargets(eventStream)(asOfDate), (targetName, target) => {
-        const schedule = scheduleUtility(scheduleGenerators[target.cadence](targetName, target.values))
-
-        return {
+      mapObject(
+        await GetTargets(eventStream)(asOfDate),
+        (targetName, target) => ({
           ...target,
-          accruedBudget: schedule.reduceEventsUntil(
-            asOfDate,
-            (accruedBudget, trigger) => accruedBudget + trigger.value.amount,
-            0
-          )
-        }
-      })
+          accruedBudget: scheduleFor(targetName, target)
+            .reduceEventsUntil(
+              asOfDate,
+              (accruedBudget, trigger) =>
+                accruedBudget + trigger.value.amount,
+              0
+            )
+        })
+      )
 
     const targetsWithNetBudgets = await eventStream.project((result, event) => {
-      if (TransactEvent.is(event)) {
-        return reduceObject(event.itemizedAmounts, (updatedTargets, targetName, amountForTarget) => {
-          if(targetName === "_" || !updatedTargets[targetName]) return updatedTargets
+      if (!TransactEvent.is(event)) return result;
 
-          return {
-            ...updatedTargets,
-            [targetName]: {
-              ...updatedTargets[targetName],
-              accruedBudget: updatedTargets[targetName].accruedBudget + amountForTarget
-            }
+      return reduceObject(
+        filterObject(
+          event.itemizedAmounts,
+          targetName => targetName !== "_" && targetsWithAccruedBudgets[targetName] !== undefined
+        ),
+        (updatedTargets, targetName, amountForTarget) => ({
+          ...updatedTargets,
+          [targetName]: {
+            ...updatedTargets[targetName],
+            accruedBudget: updatedTargets[targetName].accruedBudget + amountForTarget
           }
-        }, result)
-      }
-
-      return result
+        }),
+        result
+      )
     }, targetsWithAccruedBudgets)
 
     return mapObject(targetsWithNetBudgets, (_, target) => target.accruedBudget)
