@@ -1,5 +1,5 @@
 import {EventStream, StreamEvent} from "../event-stream";
-import {reduceObject, sortBy, mapObject} from "@budgie/language-support";
+import {reduceObject, sortBy, mapObject, mergeObjects} from "@budgie/language-support";
 
 class CreateAccountEvent implements StreamEvent {
   public static type = "CREATE_ACCOUNT"
@@ -202,5 +202,25 @@ export function GetTransactions(eventStream: EventStream) {
           })
         }, [])
     })
+  }
+}
+
+export function GetHistoricalExpenses(eventStream: EventStream) {
+  return async (startDate: string, endDate: string) => {
+    return eventStream.project((result, event) => {
+      if (TransactEvent.is(event) && event.date >= startDate && event.date <= endDate) {
+        return mergeObjects(
+          event.itemizedAmounts,
+          result,
+          (amount, total, targetName) => {
+            if(amount < 0) return -amount + (total || 0)
+            if(amount > 0 && targetName !== "_") return (total || 0) - amount
+            return (total || 0)
+          }
+        )
+      }
+
+      return result
+    }, {} as {[key: string]: number})
   }
 }
