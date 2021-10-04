@@ -88,7 +88,7 @@ export function Commands(
             "MONTHLY": "mo",
             "YEARLY": "yr"
           }
-          const entries = Object.keys(budgets).map(targetName => ({
+          const entries = Object.keys(budgets).sort().map(targetName => ({
             rate: `${formatAsDollars(budgets[targetName].values[budgets[targetName].values.length-1][1])}/${cadenceStrings[budgets[targetName].cadence]}`,
             balance: formatAsDollars(budgets[targetName].accruedBudget),
             name: targetName
@@ -116,7 +116,17 @@ export function Commands(
         presenter.printAsLedger(
           "Current budgets",
           budgets,
-          value => formatAsDollars(value.accruedBudget)
+          value => formatAsDollars(value.accruedBudget),
+          (a, b) => {
+            const cadenceValues = {
+              WEEKLY: 3,
+              MONTHLY: 2,
+              YEARLY: 1
+            }
+
+            if(a.cadence !== b.cadence) return cadenceValues[b.cadence] - cadenceValues[a.cadence]
+            return b.values[b.values.length - 1][1] - a.values[a.values.length - 1][1]
+          }
         )
       })
     },

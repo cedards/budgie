@@ -2,16 +2,22 @@ import {leftpad, multichar, pad, removeColorCodes} from "./string-processing";
 
 export function Presenter(out: (...strings: string[]) => any,) {
   return {
-    printAsLedger<T>(title: string, data: { string: T }, valueFormatter: (value: T) => string = (value: T) => value.toString()) {
+    printAsLedger<T>(
+      title: string, data: { string: T },
+      valueFormatter: (value: T) => string = (value: T) => value.toString(),
+      sortOrder: (a: T, b: T) => number = () => undefined
+    ) {
       const leftColumnWidth = Object.keys(data).reduce((max, next) => next.length > max ? next.length : max, 0) + 2
       const rightColumnWidth = Object.keys(data).reduce((max, next) => {
         const thisWidth = removeColorCodes(valueFormatter(data[next])).length;
         return thisWidth > max ? thisWidth : max
       }, 0)
       out(`\n${title}:`)
-      Object.keys(data).forEach(item => {
-        out(`  ${pad(item, leftColumnWidth, '.')}${leftpad(valueFormatter(data[item]), rightColumnWidth, '.')}`)
-      })
+      Object.keys(data)
+        .sort((a,b) => sortOrder(data[a], data[b]))
+        .forEach(item => {
+          out(`  ${pad(item, leftColumnWidth, '.')}${leftpad(valueFormatter(data[item]), rightColumnWidth, '.')}`)
+        })
       out("")
     },
 
