@@ -2,11 +2,7 @@
 
 ## Incomplete
 
-- I can see the accrual rate for saving targets
-
 - I can find out my average monthly expense rate over a given period
-
-- I can see the allocation rate for my savings targets
 
 - Budgie can ingest my bank or credit card statement for faster data entry
   
@@ -17,6 +13,8 @@
 - I can find out projected expenses for a given month
 
 ## Complete
+
+- I can see the accrual rate for saving targets
 
 - I can see funded runway as a single date rather than listed for each target
 
