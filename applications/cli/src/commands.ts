@@ -8,17 +8,19 @@ import {
   EventStream,
   GetBalances,
   GetBudgets,
+  GetHistoricalExpenses,
   GetRunway,
+  GetRunwayTrend,
   GetSpendingRate,
   GetTransactions,
+  TargetWithAccruedBudget,
+  TransactionEntry,
   TransferFunds,
-  TransactionEntry
 } from "@budgie/planning";
-import {mapObject, reduceObject} from "@budgie/language-support";
+import {reduceObject} from "@budgie/language-support";
 import {Presenter} from "./presenter";
 import {cents, formatAsDollars, parseAmount} from "./string-processing";
 import {CommandOrSubcommands} from "./cli";
-import {GetRunwayTrend, TargetWithAccruedBudget} from "../../../planning/dist/budgeting";
 
 export function Commands(
   eventStream: EventStream,
@@ -29,8 +31,29 @@ export function Commands(
   const presenter = Presenter(out)
 
   return {
-    rate: () => {
-      return GetSpendingRate(eventStream)(today).then(result => out(formatAsDollars(Math.round(result))))
+    rate: {
+      projected: () => {
+        return GetSpendingRate(eventStream)(today).then(result => out(formatAsDollars(Math.round(result))))
+      },
+      historical: (startDate: string | undefined, endDate: string | undefined) => {
+        if(startDate === undefined || endDate === undefined) {
+          const threeMonthsAgo = new Date(today)
+          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth()-3)
+          startDate = threeMonthsAgo.toISOString().substr(0, 10)
+          endDate = today
+        }
+        const millisInOneMonth = 2592000000
+        const monthsElapsed = (new Date(endDate).getTime() - new Date(startDate).getTime())/millisInOneMonth
+
+        return GetHistoricalExpenses(eventStream)(startDate, endDate).then(expenses => {
+          const totalExpenses = reduceObject(
+            expenses,
+            ((result, key, value) => value < 0 ? result : result+value),
+            0
+          )
+          out(formatAsDollars(Math.round(totalExpenses/monthsElapsed)));
+        })
+      },
     },
     account: {
       create: (name: string) => {

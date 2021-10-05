@@ -11,6 +11,7 @@ export {
   GetBalances,
   TransferFunds,
   GetTransactions,
+  GetHistoricalExpenses,
   TransactionEntry,
   EVENT_MIGRATIONS
 } from "./bookkeeping"
@@ -21,5 +22,7 @@ export {
   CreateYearlyTarget,
   GetBudgets,
   GetRunway,
-  GetSpendingRate
+  GetRunwayTrend,
+  GetSpendingRate,
+  TargetWithAccruedBudget
 } from "./budgeting"

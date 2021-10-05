@@ -1,6 +1,7 @@
 import {InMemoryEventStream} from "@budgie/planning";
 import {Cli} from "./cli";
 import {Commands} from "./commands";
+import {formatAsDollars} from "./string-processing";
 
 function FakeTerminal() {
   let output = ""
@@ -140,6 +141,50 @@ describe("CLI", () => {
     expectOutputContaining(
       /Runway over time \(in weeks\):/,
       /2020-10-31..\d+/
+    )
+  })
+
+  test("expense rates", async () => {
+    today = "2021-04-01"
+    cli = Cli(terminal.log, Commands(eventStream, terminal.log, today))
+
+    await cli(["account", "create", "cc"])
+    await cli(["target", "create", "food", "weekly", "2020-11-02", 50, 1])
+    await cli(["target", "create", "supplies", "weekly", "2020-11-02", 50, 1])
+
+    await cli(["debit", "cc", "food=100", "supermarket", "2020-11-03"])
+    await cli(["debit", "cc", "food=100", "supermarket", "2020-11-13"])
+    await cli(["debit", "cc", "food=1000", "supermarket", "2020-12-03"])
+    await cli(["debit", "cc", "food=1000", "supermarket", "2020-12-13"])
+    await cli(["debit", "cc", "food=300", "supermarket", "2021-01-03"])
+    await cli(["debit", "cc", "food=300", "supermarket", "2021-01-13"])
+    await cli(["debit", "cc", "food=400", "supermarket", "2021-02-03"])
+    await cli(["debit", "cc", "food=400", "supermarket", "2021-02-13"])
+    await cli(["debit", "cc", "food=200", "supermarket", "2021-03-03"])
+    await cli(["debit", "cc", "food=200", "supermarket", "2021-03-13"])
+    terminal.reset()
+
+    await cli(["rate", "projected"])
+    expectOutputContaining(
+      /\d+\.\d+/
+    )
+
+    await cli(["rate", "historical"]) // default to average over last three months
+    let expenseRate = (300+300+400+400+200+200)/3
+    expectOutput(
+      `${formatAsDollars(Math.round(expenseRate*100))}`
+    )
+
+    await cli(["rate", "historical", "2020-11-01", "2021-01-30"])
+    expenseRate = (100+100+1000+1000+300+300)/3
+    expectOutput(
+      `${formatAsDollars(Math.round(expenseRate*100))}`
+    )
+
+    await cli(["rate", "historical", "2020-11-01", "2021-03-01"])
+    expenseRate = (100+100+1000+1000+300+300+400+400)/4
+    expectOutput(
+      `${formatAsDollars(Math.round(expenseRate*100))}`
     )
   })
 })

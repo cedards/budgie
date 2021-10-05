@@ -2,8 +2,6 @@
 
 ## Incomplete
 
-- I can find out my average monthly expense rate over a given period
-
 - Budgie can ingest my bank or credit card statement for faster data entry
   
 - I can quickly enter common expenses
@@ -13,6 +11,8 @@
 - I can find out projected expenses for a given month
 
 ## Complete
+
+- I can find out my average monthly expense rate over a given period
 
 - I can see the accrual rate for saving targets
 
